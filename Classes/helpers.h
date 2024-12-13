@@ -1,7 +1,6 @@
 #pragma once
 
 #include "glm/glm.hpp"
-#include "Camera.h"
 #include <vector>
 #include <string>
 #include <tuple>

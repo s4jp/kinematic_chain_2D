@@ -19,35 +19,22 @@
 #include "VAO.h"
 #include "VBO.h"
 #include "EBO.h"
-#include "Camera.h"
-
-const float near = 0.1f;
-const float far = 100.0f;
-
-Camera *camera;
-
-glm::mat4 view;
-glm::mat4 proj;
 
 void window_size_callback(GLFWwindow *window, int width, int height);
 
-int modelLoc, viewLoc, projLoc, colorLoc;
+int screenSizeLoc, isNormalizedLoc, colorLoc;
+
+glm::vec2 screenSize(1500, 800);
+const int guiWidth = 300;
 
 int main() { 
-    // initial values
-    int width = 1500;
-    int height = 800;
-    glm::vec3 cameraPosition = glm::vec3(3.0f, 3.0f, 3.0f);
-    float fov = M_PI / 4.0f;
-    int guiWidth = 300;
-
     #pragma region gl_boilerplate
     glfwInit();
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-    GLFWwindow *window = glfwCreateWindow(width, height, "Kinematic chain 2D", NULL, NULL);
+    GLFWwindow *window = glfwCreateWindow(screenSize.x, screenSize.y, "Kinematic chain 2D", NULL, NULL);
     if (window == NULL) {
       std::cout << "Failed to create GLFW window" << std::endl;
       glfwTerminate();
@@ -56,7 +43,7 @@ int main() {
     glfwMakeContextCurrent(window);
 
     gladLoadGL();
-    glViewport(0, 0, width - guiWidth, height);
+    glViewport(0, 0, screenSize.x - guiWidth, screenSize.y);
     glEnable(GL_DEPTH_TEST);
 
     GLFWimage icon;
@@ -67,16 +54,12 @@ int main() {
 
     // shaders and uniforms
     Shader shaderProgram("Shaders\\default.vert", "Shaders\\default.frag");
-    modelLoc = glGetUniformLocation(shaderProgram.ID, "model");
-    viewLoc = glGetUniformLocation(shaderProgram.ID, "view");
-    projLoc = glGetUniformLocation(shaderProgram.ID, "proj");
+	screenSizeLoc = glGetUniformLocation(shaderProgram.ID, "screenSize");
+	isNormalizedLoc = glGetUniformLocation(shaderProgram.ID, "isNormalized");
     colorLoc = glGetUniformLocation(shaderProgram.ID, "color");
 
     // callbacks
     glfwSetWindowSizeCallback(window, window_size_callback);
-
-    camera = new Camera(width, height, cameraPosition, fov, near, far, guiWidth);
-    camera->PrepareMatrices(view, proj);
 
     #pragma region imgui_boilerplate
     IMGUI_CHECKVERSION();
@@ -97,19 +80,13 @@ int main() {
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
-        ImGui::SetNextWindowSize(ImVec2(camera->guiWidth, camera->GetHeight()));
-        ImGui::SetNextWindowPos(ImVec2(camera->GetWidth(), 0));
+        ImGui::SetNextWindowSize(ImVec2(guiWidth, screenSize.y));
+        ImGui::SetNextWindowPos(ImVec2(screenSize.x - guiWidth, 0));
         #pragma endregion
-
-		// camera inputs handling
-        camera->HandleInputs(window);
-        camera->PrepareMatrices(view, proj);
         
-        // render non-grayscaleable objects
         shaderProgram.Activate();
+        glUniform2fv(screenSizeLoc, 1, glm::value_ptr(screenSize));
 
-        glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
-        glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(proj));
         // render
 
 
@@ -141,8 +118,6 @@ int main() {
 
 // callbacks
 void window_size_callback(GLFWwindow *window, int width, int height) {
-  camera->SetWidth(width);
-  camera->SetHeight(height);
-  camera->PrepareMatrices(view, proj);
-  glViewport(0, 0, width - camera->guiWidth, height);
+	screenSize = { width, height };
+    glViewport(0, 0, screenSize.x - guiWidth, screenSize.y);
 }

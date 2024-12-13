@@ -1,9 +1,16 @@
 #version 460 core
-layout (location = 0) in vec3 pos;
-uniform mat4 model;
-uniform mat4 view;
-uniform mat4 proj;
+
+layout (location = 0) in vec2 aPos;
+
+uniform vec2 screenSize;
+uniform bool isNormalized;
+
 void main()
 {
-   gl_Position = proj * view *  model * vec4(pos, 1.0);
+   vec2 ndcPos = aPos;
+
+   if (!isNormalized) 
+		ndcPos = ndcPos / screenSize * 2.f - 1.f;
+
+   gl_Position = vec4(ndcPos, 0.f, 1.f);
 }

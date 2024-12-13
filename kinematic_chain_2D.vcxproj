@@ -156,7 +156,6 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="Classes\Camera.cpp" />
     <ClCompile Include="Classes\EBO.cpp" />
     <ClCompile Include="Classes\helpers.cpp" />
     <ClCompile Include="Classes\Shader.cpp" />
@@ -174,7 +173,6 @@
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Classes\Camera.h" />
     <ClInclude Include="Classes\EBO.h" />
     <ClInclude Include="Classes\helpers.h" />
     <ClInclude Include="Classes\Shader.h" />
