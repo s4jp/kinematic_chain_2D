@@ -7,5 +7,7 @@ uniform vec2 viewportSize;
 void main()
 {
 	vec2 ndcPos = aPos / viewportSize * 2.f - 1.f;
+	ndcPos.y *= -1.f;
+
 	gl_Position = vec4(ndcPos, 0.f, 1.f);
 }

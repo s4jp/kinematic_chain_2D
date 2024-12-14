@@ -84,6 +84,9 @@
     <ClCompile Include="Classes\axis.cpp">
       <Filter>Source Files\figures</Filter>
     </ClCompile>
+    <ClCompile Include="Classes\rectangle.cpp">
+      <Filter>Source Files\figures</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="imgui\imconfig.h">
@@ -135,6 +138,9 @@
       <Filter>Header Files\figures</Filter>
     </ClInclude>
     <ClInclude Include="Classes\figure.h">
+      <Filter>Header Files\figures</Filter>
+    </ClInclude>
+    <ClInclude Include="Classes\rectangle.h">
       <Filter>Header Files\figures</Filter>
     </ClInclude>
   </ItemGroup>
