@@ -20,12 +20,14 @@
 #include "VBO.h"
 #include "EBO.h"
 
-void window_size_callback(GLFWwindow *window, int width, int height);
+#include "axis.h"
 
-int screenSizeLoc, isNormalizedLoc, colorLoc;
+int viewportSizeLoc, colorLoc;
 
-glm::vec2 screenSize(1500, 800);
+const glm::vec2 viewportSize(1200, 800); 
 const int guiWidth = 300;
+
+Axis* axis;
 
 int main() { 
     #pragma region gl_boilerplate
@@ -33,8 +35,9 @@ int main() {
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+    glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
 
-    GLFWwindow *window = glfwCreateWindow(screenSize.x, screenSize.y, "Kinematic chain 2D", NULL, NULL);
+    GLFWwindow *window = glfwCreateWindow(viewportSize.x + guiWidth, viewportSize.y, "Kinematic chain 2D", NULL, NULL);
     if (window == NULL) {
       std::cout << "Failed to create GLFW window" << std::endl;
       glfwTerminate();
@@ -43,7 +46,7 @@ int main() {
     glfwMakeContextCurrent(window);
 
     gladLoadGL();
-    glViewport(0, 0, screenSize.x - guiWidth, screenSize.y);
+    glViewport(0, 0, viewportSize.x, viewportSize.y);
     glEnable(GL_DEPTH_TEST);
 
     GLFWimage icon;
@@ -54,12 +57,11 @@ int main() {
 
     // shaders and uniforms
     Shader shaderProgram("Shaders\\default.vert", "Shaders\\default.frag");
-	screenSizeLoc = glGetUniformLocation(shaderProgram.ID, "screenSize");
-	isNormalizedLoc = glGetUniformLocation(shaderProgram.ID, "isNormalized");
+    viewportSizeLoc = glGetUniformLocation(shaderProgram.ID, "viewportSize");
     colorLoc = glGetUniformLocation(shaderProgram.ID, "color");
 
-    // callbacks
-    glfwSetWindowSizeCallback(window, window_size_callback);
+	// objects
+	axis = new Axis(viewportSize);
 
     #pragma region imgui_boilerplate
     IMGUI_CHECKVERSION();
@@ -80,15 +82,15 @@ int main() {
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
-        ImGui::SetNextWindowSize(ImVec2(guiWidth, screenSize.y));
-        ImGui::SetNextWindowPos(ImVec2(screenSize.x - guiWidth, 0));
+        ImGui::SetNextWindowSize(ImVec2(guiWidth, viewportSize.y));
+        ImGui::SetNextWindowPos(ImVec2(viewportSize.x, 0));
         #pragma endregion
         
         shaderProgram.Activate();
-        glUniform2fv(screenSizeLoc, 1, glm::value_ptr(screenSize));
+        glUniform2fv(viewportSizeLoc, 1, glm::value_ptr(viewportSize));
 
         // render
-
+		axis->Render(colorLoc);
 
         // imgui rendering
         if (ImGui::Begin("Menu", 0,
@@ -109,15 +111,13 @@ int main() {
     ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplGlfw_Shutdown();
     ImGui::DestroyContext();
+
+	// assets cleanup
     shaderProgram.Delete();
+	axis->Delete();
+
     glfwDestroyWindow(window);
     glfwTerminate();
     return 0;
     #pragma endregion
-}
-
-// callbacks
-void window_size_callback(GLFWwindow *window, int width, int height) {
-	screenSize = { width, height };
-    glViewport(0, 0, screenSize.x - guiWidth, screenSize.y);
 }

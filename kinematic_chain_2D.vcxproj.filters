@@ -28,6 +28,12 @@
     <Filter Include="Source Files\assets">
       <UniqueIdentifier>{e1fb8b5b-2d05-4572-8562-d42ec33b05cd}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\figures">
+      <UniqueIdentifier>{3da5ba7f-ce13-4254-accb-b57a160b147e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\figures">
+      <UniqueIdentifier>{6698a882-1b8b-4626-b404-03590ef841c8}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="glad.c">
@@ -75,6 +81,9 @@
     <ClCompile Include="Classes\VBO.cpp">
       <Filter>Source Files\assets</Filter>
     </ClCompile>
+    <ClCompile Include="Classes\axis.cpp">
+      <Filter>Source Files\figures</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="imgui\imconfig.h">
@@ -121,6 +130,12 @@
     </ClInclude>
     <ClInclude Include="Classes\VBO.h">
       <Filter>Header Files\assets</Filter>
+    </ClInclude>
+    <ClInclude Include="Classes\axis.h">
+      <Filter>Header Files\figures</Filter>
+    </ClInclude>
+    <ClInclude Include="Classes\figure.h">
+      <Filter>Header Files\figures</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
