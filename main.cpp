@@ -1,4 +1,4 @@
-#define _USE_MATH_DEFINES
+﻿#define _USE_MATH_DEFINES
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
@@ -23,6 +23,7 @@
 #include "axis.h"
 #include "rectangle.h"
 #include "ControlledInputFloat.h"
+#include "chain.h"
 
 void mouse_button_callback(GLFWwindow* window, int button, int action, int mods);
 void mouseMoveCallback(GLFWwindow* window, double xpos, double ypos);
@@ -30,16 +31,17 @@ void mouseMoveCallback(GLFWwindow* window, double xpos, double ypos);
 bool isCreatingRectangle();
 int checkForRectangle(glm::vec2 pos);
 
-int viewportSizeLoc, colorLoc;
+int viewportSizeLoc, inverseYLoc, colorLoc;
 
 const glm::vec2 viewportSize(1200, 800); 
 const int guiWidth = 300;
 static int mode = 0;
-ControlledInputFloat L1("L1", 100.0f, 1.f, 1.f);
+ControlledInputFloat L1("L1", 150.0f, 1.f, 1.f);
 ControlledInputFloat L2("L2", 100.0f, 1.f, 1.f);
 
 Axis* axis;
 std::vector<Rectangle*> rectangles;
+Chain* chain;
 
 int main() { 
     #pragma region gl_boilerplate
@@ -74,10 +76,12 @@ int main() {
     // shaders and uniforms
     Shader shaderProgram("Shaders\\default.vert", "Shaders\\default.frag");
     viewportSizeLoc = glGetUniformLocation(shaderProgram.ID, "viewportSize");
+	inverseYLoc = glGetUniformLocation(shaderProgram.ID, "inverseY");
     colorLoc = glGetUniformLocation(shaderProgram.ID, "color");
 
 	// objects
 	axis = new Axis(viewportSize);
+	chain = new Chain(viewportSize / 2.f, L1.GetValue(), L2.GetValue());
 
     #pragma region imgui_boilerplate
     IMGUI_CHECKVERSION();
@@ -106,9 +110,12 @@ int main() {
         glUniform2fv(viewportSizeLoc, 1, glm::value_ptr(viewportSize));
 
         // render
+		glUniform1i(inverseYLoc, GL_TRUE);
 		axis->Render(colorLoc);
 		for (auto& r : rectangles)
 			r->Render(colorLoc);
+		glUniform1i(inverseYLoc, GL_FALSE);
+		chain->Render(colorLoc);
 
         // imgui rendering
         ImGui::Begin("Menu", 0,
@@ -122,6 +129,12 @@ int main() {
 		ImGui::SeparatorText("Parameters");
 		L1.Render();
 		L2.Render();
+		if (ImGui::Button("Set lengths")) 
+            chain->UpdateLengths(L1.GetValue(), L2.GetValue());
+
+		ImGui::SeparatorText("Conf. space coords");
+		glm::vec2 angles = chain->GetAngles();
+		ImGui::Text(u8"a1 = %.2f°, a2 = %.2f°", angles.x, angles.y);
 
         ImGui::End();
         #pragma region rest
@@ -143,6 +156,7 @@ int main() {
 	axis->Delete();
 	for (auto& r : rectangles)
 		r->Delete();
+	chain->Delete();
 
     glfwDestroyWindow(window);
     glfwTerminate();
