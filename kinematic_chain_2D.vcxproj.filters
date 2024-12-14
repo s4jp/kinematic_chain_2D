@@ -143,6 +143,9 @@
     <ClInclude Include="Classes\rectangle.h">
       <Filter>Header Files\figures</Filter>
     </ClInclude>
+    <ClInclude Include="Classes\ControlledInputFloat.h">
+      <Filter>Header Files\assets</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="Shaders\default.frag">

@@ -22,6 +22,7 @@
 
 #include "axis.h"
 #include "rectangle.h"
+#include "ControlledInputFloat.h"
 
 void mouse_button_callback(GLFWwindow* window, int button, int action, int mods);
 void mouseMoveCallback(GLFWwindow* window, double xpos, double ypos);
@@ -33,6 +34,9 @@ int viewportSizeLoc, colorLoc;
 
 const glm::vec2 viewportSize(1200, 800); 
 const int guiWidth = 300;
+static int mode = 0;
+ControlledInputFloat L1("L1", 100.0f, 1.f, 1.f);
+ControlledInputFloat L2("L2", 100.0f, 1.f, 1.f);
 
 Axis* axis;
 std::vector<Rectangle*> rectangles;
@@ -107,9 +111,17 @@ int main() {
 			r->Render(colorLoc);
 
         // imgui rendering
-        if (ImGui::Begin("Menu", 0,
+        ImGui::Begin("Menu", 0,
             ImGuiWindowFlags_NoMove |
-            ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse)) {}
+            ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse);
+
+		ImGui::SeparatorText("Mode");
+		ImGui::RadioButton("Positions setup", &mode, 0); ImGui::SameLine();
+		ImGui::RadioButton("Obstacles setup", &mode, 1);
+
+		ImGui::SeparatorText("Parameters");
+		L1.Render();
+		L2.Render();
 
         ImGui::End();
         #pragma region rest
@@ -147,34 +159,39 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
     //std::cout << xpos << " " << ypos << std::endl;
 
 	if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
-		if (isCreatingRectangle()) {
-			rectangles[rectangles.size() - 1]->UpdateEnd(glm::vec2(xpos, ypos));
-			rectangles[rectangles.size() - 1]->inCreation = false;
-		}
-		else {
-			rectangles.push_back(new Rectangle(glm::vec2(xpos, ypos)));
-		}
+        if (mode == 1) {
+            if (isCreatingRectangle()) {
+                rectangles[rectangles.size() - 1]->UpdateEnd(glm::vec2(xpos, ypos));
+                rectangles[rectangles.size() - 1]->inCreation = false;
+            }
+            else {
+                rectangles.push_back(new Rectangle(glm::vec2(xpos, ypos)));
+            }
+        }
 	}
 
 	if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_PRESS) {
-        if (isCreatingRectangle()) return;
+        if (mode == 1) {
+            if (isCreatingRectangle()) return;
 
-		int i = checkForRectangle(glm::vec2(xpos, ypos));
-		if (i != -1) {
-			rectangles[i]->Delete();
-			rectangles.erase(rectangles.begin() + i);
-		}
+            int i = checkForRectangle(glm::vec2(xpos, ypos));
+            if (i != -1) {
+                rectangles[i]->Delete();
+                rectangles.erase(rectangles.begin() + i);
+            }
+        }
 	}
 }
 
-void mouseMoveCallback(GLFWwindow* window, double xpos, double ypos)
-{
+void mouseMoveCallback(GLFWwindow* window, double xpos, double ypos){
     if (ImGui::IsWindowHovered(ImGuiHoveredFlags_AnyWindow))
         return;
 
-	if (isCreatingRectangle()) {
-		rectangles[rectangles.size() - 1]->UpdateEnd(glm::vec2(xpos, ypos));
-	}
+    if (mode == 1) {
+        if (isCreatingRectangle()) {
+            rectangles[rectangles.size() - 1]->UpdateEnd(glm::vec2(xpos, ypos));
+        }
+    }
 }
 
 bool isCreatingRectangle()
