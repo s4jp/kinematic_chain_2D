@@ -90,6 +90,9 @@
     <ClCompile Include="Classes\chain.cpp">
       <Filter>Source Files\figures</Filter>
     </ClCompile>
+    <ClCompile Include="Classes\configurationSpace.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="imgui\imconfig.h">
@@ -151,6 +154,12 @@
     </ClInclude>
     <ClInclude Include="Classes\chain.h">
       <Filter>Header Files\figures</Filter>
+    </ClInclude>
+    <ClInclude Include="Classes\ControlledInputInt.h">
+      <Filter>Header Files\assets</Filter>
+    </ClInclude>
+    <ClInclude Include="Classes\configurationSpace.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

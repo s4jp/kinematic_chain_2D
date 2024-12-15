@@ -54,6 +54,17 @@ void Rectangle::Print() const
 	std::cout << "(" << endPos.x << " x " << endPos.y << ")" << std::endl;
 }
 
+char Rectangle::CheckCollision(const std::vector<glm::vec2> joints) const
+{
+	glm::vec4 rect = GetRectangle();
+	for (int i = 0; i < joints.size(); i++) {
+		if (joints[i].x >= rect.x && joints[i].x <= rect.z &&
+			joints[i].y >= rect.y && joints[i].y <= rect.w)
+			return true;
+	}
+	return false;
+}
+
 std::tuple<std::vector<GLfloat>, std::vector<GLuint>> Rectangle::Calculate() const
 {
 	std::vector<GLfloat> vertices = {

@@ -19,11 +19,13 @@
 #include "VAO.h"
 #include "VBO.h"
 #include "EBO.h"
+#include "ControlledInputFloat.h"
+#include "ControlledInputInt.h"
 
 #include "axis.h"
 #include "rectangle.h"
-#include "ControlledInputFloat.h"
 #include "chain.h"
+#include "configurationSpace.h"
 
 void mouse_button_callback(GLFWwindow* window, int button, int action, int mods);
 void mouseMoveCallback(GLFWwindow* window, double xpos, double ypos);
@@ -34,15 +36,16 @@ int checkForRectangle(glm::vec2 pos);
 
 int viewportSizeLoc, colorLoc;
 
-const glm::vec2 viewportSize(1200, 800); 
-const int guiWidth = 300;
+static const glm::vec2 viewportSize(1200, 800);
+static const int guiWidth = 300;
 static int mode = 0;
-ControlledInputFloat L1("L1", 150.0f, 1.f, 1.f);
-ControlledInputFloat L2("L2", 100.0f, 1.f, 1.f);
+static ControlledInputFloat L1("L1", 150.0f, 1.f, 1.f);
+static ControlledInputFloat L2("L2", 100.0f, 1.f, 1.f);
 
 Axis* axis;
 std::vector<Rectangle*> rectangles;
 Chain* chain;
+ConfigurationSpace* confSpace;
 
 int main() { 
     #pragma region gl_boilerplate
@@ -82,6 +85,7 @@ int main() {
 	// objects
 	axis = new Axis(viewportSize);
 	chain = new Chain(L1.GetValue(), L2.GetValue());
+	confSpace = new ConfigurationSpace();
 
     #pragma region imgui_boilerplate
     IMGUI_CHECKVERSION();
@@ -130,11 +134,17 @@ int main() {
 		if (ImGui::Button("Set lengths")) 
             chain->UpdateLengths(L1.GetValue(), L2.GetValue());
 
-		ImGui::SeparatorText("Conf. space coords");
+		ImGui::SeparatorText("Configuration space");
+
 		glm::vec2 angles = chain->GetAngles();
-		ImGui::Text(u8"a1 = %.2f°, a2 = %.2f°", angles.x, angles.y);
+		ImGui::Text(u8"Coords: a1 = %.2f°, a2 = %.2f°", angles.x, angles.y);
+
+		ImGui::Spacing();
+        confSpace->RenderImGui(chain, rectangles);
 
         ImGui::End();
+
+		confSpace->RenderTexture();
         #pragma region rest
         ImGui::Render();
         //std::cout << ImGui::GetIO().Framerate << std::endl;

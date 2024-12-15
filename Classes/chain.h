@@ -11,6 +11,7 @@ public:
 
 	void UpdateLengths(float L1, float L2);
 	glm::vec2 GetAngles() const;
+	std::vector<glm::vec2> CalculateJoints(float a1, float a2) const;
 private:
 	float L1, L2;
 	float angle1, angle2;

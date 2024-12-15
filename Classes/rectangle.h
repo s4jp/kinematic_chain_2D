@@ -15,6 +15,7 @@ public:
 	glm::vec4 GetRectangle() const;
 	glm::vec4 GetColor() const;
 	void Print() const;
+	char CheckCollision(const std::vector<glm::vec2> joints) const;
 private:
 	glm::vec2 startPos;
 	glm::vec2 endPos;

@@ -34,6 +34,17 @@ glm::vec2 Chain::GetAngles() const
 	return glm::vec2(angle1, angle2);
 }
 
+std::vector<glm::vec2> Chain::CalculateJoints(float a1, float a2) const
+{
+	std::vector<glm::vec2> newJoints;
+
+	newJoints.push_back(glm::vec2(0.f));
+	newJoints.push_back(newJoints[0] + glm::vec2(L1 * cos(glm::radians(a1)), L1 * sin(glm::radians(a1))));
+	newJoints.push_back(newJoints[1] + glm::vec2(L2 * cos(glm::radians(a1 + a2)), L2 * sin(glm::radians(a1 + a2))));
+
+	return newJoints;
+}
+
 std::tuple<std::vector<GLfloat>, std::vector<GLuint>> Chain::InitializeAndCalculate(float L1, float L2, float angle1, float angle2)
 {
 	this->L1 = L1;
@@ -46,10 +57,7 @@ std::tuple<std::vector<GLfloat>, std::vector<GLuint>> Chain::InitializeAndCalcul
 
 std::tuple<std::vector<GLfloat>, std::vector<GLuint>> Chain::Calculate()
 {
-	joints.clear();
-	joints.push_back(glm::vec2(0.f));
-	joints.push_back(joints[0] + glm::vec2(L1 * cos(glm::radians(angle1)), L1 * sin(glm::radians(angle1))));
-	joints.push_back(joints[1] + glm::vec2(L2 * cos(glm::radians(angle1 + angle2)), L2 * sin(glm::radians(angle1 + angle2))));
+	joints = this->CalculateJoints(this->angle1, this->angle2);
 
 	std::vector<GLfloat> vertices = {
 		joints[0].x, joints[0].y,

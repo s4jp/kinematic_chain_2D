@@ -158,6 +158,7 @@
   <ItemGroup>
     <ClCompile Include="Classes\axis.cpp" />
     <ClCompile Include="Classes\chain.cpp" />
+    <ClCompile Include="Classes\configurationSpace.cpp" />
     <ClCompile Include="Classes\EBO.cpp" />
     <ClCompile Include="Classes\helpers.cpp" />
     <ClCompile Include="Classes\rectangle.cpp" />
@@ -178,7 +179,9 @@
   <ItemGroup>
     <ClInclude Include="Classes\axis.h" />
     <ClInclude Include="Classes\chain.h" />
+    <ClInclude Include="Classes\configurationSpace.h" />
     <ClInclude Include="Classes\ControlledInputFloat.h" />
+    <ClInclude Include="Classes\ControlledInputInt.h" />
     <ClInclude Include="Classes\EBO.h" />
     <ClInclude Include="Classes\figure.h" />
     <ClInclude Include="Classes\helpers.h" />
