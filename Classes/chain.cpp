@@ -4,8 +4,8 @@
 const float lineWidth = 10.0f;
 const float defaultLineWidth = 1.0f;
 
-Chain::Chain(glm::vec2 startPos, float L1, float L2, float angle1, float angle2) 
-	: Figure(InitializeAndCalculate(startPos, L1, L2, angle1, angle2)) {}
+Chain::Chain(float L1, float L2, float angle1, float angle2) 
+	: Figure(InitializeAndCalculate(L1, L2, angle1, angle2)) {}
 
 void Chain::Render(int colorLoc)
 {
@@ -34,9 +34,8 @@ glm::vec2 Chain::GetAngles() const
 	return glm::vec2(angle1, angle2);
 }
 
-std::tuple<std::vector<GLfloat>, std::vector<GLuint>> Chain::InitializeAndCalculate(glm::vec2 startPos, float L1, float L2, float angle1, float angle2)
+std::tuple<std::vector<GLfloat>, std::vector<GLuint>> Chain::InitializeAndCalculate(float L1, float L2, float angle1, float angle2)
 {
-	this->startPos = startPos;
 	this->L1 = L1;
 	this->L2 = L2;
 	this->angle1 = angle1;
@@ -48,7 +47,7 @@ std::tuple<std::vector<GLfloat>, std::vector<GLuint>> Chain::InitializeAndCalcul
 std::tuple<std::vector<GLfloat>, std::vector<GLuint>> Chain::Calculate()
 {
 	joints.clear();
-	joints.push_back(startPos);
+	joints.push_back(glm::vec2(0.f));
 	joints.push_back(joints[0] + glm::vec2(L1 * cos(glm::radians(angle1)), L1 * sin(glm::radians(angle1))));
 	joints.push_back(joints[1] + glm::vec2(L2 * cos(glm::radians(angle1 + angle2)), L2 * sin(glm::radians(angle1 + angle2))));
 

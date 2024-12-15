@@ -19,11 +19,11 @@ std::tuple<std::vector<GLfloat>, std::vector<GLuint>> Axis::Calculate(glm::vec2 
 {
 	std::vector<GLfloat> vertices = {
 		// x-axis
-		0.f,					viewportSize.y / 2,
-		viewportSize.x,			viewportSize.y / 2,
+		-viewportSize.x / 2.f,		0.f,
+		 viewportSize.x / 2.f,		0.f,
 		// y-axis
-		viewportSize.x / 2,		0.f,
-		viewportSize.x / 2,		viewportSize.y
+		0.f,						-viewportSize.y / 2.f,
+		0.f,						 viewportSize.y / 2.f
 	};
 
 	std::vector<GLuint> indices = {

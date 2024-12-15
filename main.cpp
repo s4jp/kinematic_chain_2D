@@ -27,11 +27,12 @@
 
 void mouse_button_callback(GLFWwindow* window, int button, int action, int mods);
 void mouseMoveCallback(GLFWwindow* window, double xpos, double ypos);
+void changeToRelativeCoords(double& xpos, double& ypos);
 
 bool isCreatingRectangle();
 int checkForRectangle(glm::vec2 pos);
 
-int viewportSizeLoc, inverseYLoc, colorLoc;
+int viewportSizeLoc, colorLoc;
 
 const glm::vec2 viewportSize(1200, 800); 
 const int guiWidth = 300;
@@ -76,12 +77,11 @@ int main() {
     // shaders and uniforms
     Shader shaderProgram("Shaders\\default.vert", "Shaders\\default.frag");
     viewportSizeLoc = glGetUniformLocation(shaderProgram.ID, "viewportSize");
-	inverseYLoc = glGetUniformLocation(shaderProgram.ID, "inverseY");
     colorLoc = glGetUniformLocation(shaderProgram.ID, "color");
 
 	// objects
 	axis = new Axis(viewportSize);
-	chain = new Chain(viewportSize / 2.f, L1.GetValue(), L2.GetValue());
+	chain = new Chain(L1.GetValue(), L2.GetValue());
 
     #pragma region imgui_boilerplate
     IMGUI_CHECKVERSION();
@@ -110,11 +110,9 @@ int main() {
         glUniform2fv(viewportSizeLoc, 1, glm::value_ptr(viewportSize));
 
         // render
-		glUniform1i(inverseYLoc, GL_TRUE);
 		axis->Render(colorLoc);
 		for (auto& r : rectangles)
 			r->Render(colorLoc);
-		glUniform1i(inverseYLoc, GL_FALSE);
 		chain->Render(colorLoc);
 
         // imgui rendering
@@ -170,6 +168,7 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 
     double xpos, ypos;
     glfwGetCursorPos(window, &xpos, &ypos);
+	changeToRelativeCoords(xpos, ypos);
     //std::cout << xpos << " " << ypos << std::endl;
 
 	if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
@@ -201,11 +200,20 @@ void mouseMoveCallback(GLFWwindow* window, double xpos, double ypos){
     if (ImGui::IsWindowHovered(ImGuiHoveredFlags_AnyWindow))
         return;
 
+	changeToRelativeCoords(xpos, ypos);
+
     if (mode == 1) {
         if (isCreatingRectangle()) {
             rectangles[rectangles.size() - 1]->UpdateEnd(glm::vec2(xpos, ypos));
         }
     }
+}
+
+void changeToRelativeCoords(double& xpos, double& ypos)
+{
+	xpos -= viewportSize.x / 2.f;
+	ypos -= viewportSize.y / 2.f;
+	ypos *= -1.f;
 }
 
 bool isCreatingRectangle()
