@@ -3,6 +3,7 @@
 
 const float lineWidth = 10.0f;
 const float defaultLineWidth = 1.0f;
+const float sameAngleThreshold = 0.1f;
 
 Chain::Chain(float L1, float L2, float angle1, float angle2) 
 	: Figure(InitializeAndCalculate(L1, L2, angle1, angle2)) {}
@@ -34,6 +35,13 @@ glm::vec2 Chain::GetAngles() const
 	return glm::vec2(angle1, angle2);
 }
 
+void Chain::SetAngles(float a1, float a2)
+{
+	angle1 = a1;
+	angle2 = a2;
+	RefreshBuffers(Calculate());
+}
+
 std::vector<glm::vec2> Chain::CalculateJoints(float a1, float a2) const
 {
 	std::vector<glm::vec2> newJoints;
@@ -43,6 +51,40 @@ std::vector<glm::vec2> Chain::CalculateJoints(float a1, float a2) const
 	newJoints.push_back(newJoints[1] + glm::vec2(L2 * cos(glm::radians(a1 + a2)), L2 * sin(glm::radians(a1 + a2))));
 
 	return newJoints;
+}
+
+std::vector<glm::vec2> Chain::InverseKinematics(glm::vec2 target) const
+{
+	float x = target.x;
+	float y = target.y;
+	float dist = sqrt(x * x + y * y);
+
+	if (dist > L1 + L2)
+		return {};
+
+	auto calculateA1 = [&](float a2) {
+		float a1 = atan2(y, x) - atan2(L2 * sin(a2), L1 + L2 * cos(a2));
+		return a1;
+	};
+
+	std::vector<glm::vec2> angles;
+
+	float cosA2 = (dist * dist - L1 * L1 - L2 * L2) / (2.f * L1 * L2);
+	cosA2 = glm::clamp(cosA2, -1.f, 1.f);
+
+	float a2 = acos(cosA2);
+	float a2alt = 2.f * M_PI - a2;
+	float a1 = calculateA1(a2);
+	float a1alt = calculateA1(a2alt);
+
+	angles.push_back({ glm::degrees(a1), glm::degrees(a2) });
+	if (abs(a1 - a1alt) > sameAngleThreshold && 
+		abs(a2 - a2alt) > sameAngleThreshold && 
+		abs(a1 - a1alt) < 360.f - sameAngleThreshold && 
+		abs(a2 - a2alt) < 360.f - sameAngleThreshold)
+		angles.push_back({ glm::degrees(a1alt), glm::degrees(a2alt) });
+
+	return angles;
 }
 
 std::tuple<std::vector<GLfloat>, std::vector<GLuint>> Chain::InitializeAndCalculate(float L1, float L2, float angle1, float angle2)
