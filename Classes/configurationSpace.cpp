@@ -1,4 +1,10 @@
 #include "configurationSpace.h"
+#include <queue>
+#include <unordered_map>
+
+const std::vector<glm::vec2> cardinalDirections = {
+    {0, 1}, {1, 0}, {0, -1}, {-1, 0}
+};
 
 ConfigurationSpace::ConfigurationSpace(int discrLevel) 
 	: discrLevel("Discr. level", discrLevel, 1, 1)
@@ -55,6 +61,51 @@ bool ConfigurationSpace::CheckCollision(glm::vec2 angles) const
 	return table[i][j];
 }
 
+std::vector<glm::vec2> ConfigurationSpace::FindShortestPath(glm::vec2 startIdx, glm::vec2 endIdx)
+{
+    int n = table.size();
+
+    auto isValid = [&](int x, int y) {
+        return x >= 0 && y >= 0 && x < n && y < n && table[x][y] == 0;
+    };
+
+    std::queue<glm::vec2> q;
+    std::unordered_map<int, glm::vec2> backtrack;
+    q.push(startIdx);
+	backtrack[startIdx.x * n + startIdx.y] = { -1, -1 }; // guard value
+
+    while (!q.empty()) {
+        glm::vec2 current = q.front();
+        q.pop();
+
+        if (current == endIdx) {
+            std::vector<glm::vec2> path;
+            for (glm::vec2 at = endIdx; at.x != -1; at = backtrack[at.x * n + at.y]) {
+                path.push_back(at);
+            }
+            std::reverse(path.begin(), path.end());
+            return path;
+        }
+
+        for (const auto& dir : cardinalDirections) {
+            glm::vec2 neighbor = current + dir;
+            int x = neighbor.x, y = neighbor.y;
+
+            if (isValid(x, y) && backtrack.find(x * n + y) == backtrack.end()) {
+                q.push(neighbor);
+                backtrack[x * n + y] = current;
+            }
+        }
+    }
+
+    return {};
+}
+
+void ConfigurationSpace::AddPointsToTexture(std::vector<glm::vec2> points)
+{
+	this->texture = CreateTexture(points);
+}
+
 void ConfigurationSpace::ClearTable()
 {
 	int n = discrLevel.GetValue();
@@ -89,7 +140,7 @@ void ConfigurationSpace::CalculateTable(Chain* chain)
 	}
 }
 
-GLuint ConfigurationSpace::CreateTexture() const
+GLuint ConfigurationSpace::CreateTexture(std::vector<glm::vec2> path) const
 {
     int n = table.size();
     if (n == 0 || table[0].size() == 0) return 0;
@@ -100,19 +151,27 @@ GLuint ConfigurationSpace::CreateTexture() const
         for (int j = 0; j < n; ++j) {
             int index = (i * n + j) * 4;
             if (table[i][j] == 1) {
-                pixels[index + 0] = 255; // R
-                pixels[index + 1] = 0;   // G
-                pixels[index + 2] = 0;   // B
-                pixels[index + 3] = 255; // A
+                pixels[index + 0] = 255;    // R
+                pixels[index + 1] = 255;    // G
+                pixels[index + 2] = 255;    // B
+                pixels[index + 3] = 255;    // A
             }
             else {
-                pixels[index + 0] = 0;   // R
-                pixels[index + 1] = 255; // G
-                pixels[index + 2] = 0;   // B
-                pixels[index + 3] = 255; // A
+                pixels[index + 0] = 0;      // R
+                pixels[index + 1] = 0;      // G
+                pixels[index + 2] = 0;      // B
+                pixels[index + 3] = 255;    // A
             }
         }
     }
+
+	for (const auto& p : path) {
+        int index = (p.x * n + p.y) * 4;
+		pixels[index + 0] = 255;            // R
+		pixels[index + 1] = 0;              // G
+		pixels[index + 2] = 0;              // B
+		pixels[index + 3] = 255;            // A
+	}
 
     GLuint texture;
 

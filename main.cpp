@@ -57,6 +57,8 @@ static int selectedConfigs[2] = { -1, -1 };
 enum Mode { OFF, START, END };
 static Mode targetMode = Mode::START;
 
+std::vector<glm::vec2> path;
+
 int main() { 
     #pragma region gl_boilerplate
     glfwInit();
@@ -192,8 +194,14 @@ int main() {
                 ImGui::Spacing(); ImGui::Spacing();
 
                 if (ImGui::Button("Find path")) {
-                    // todo
+					path = confSpace->FindShortestPath(startConfigs[selectedConfigs[0]], endConfigs[selectedConfigs[1]]);
+					confSpace->AddPointsToTexture(path);
+                    //confSpace->AddPointsToTexture({ startConfigs[selectedConfigs[0]], endConfigs[selectedConfigs[1]] });
                 }
+				if (path.size() > 0) {
+					ImGui::SameLine();
+					ImGui::Text("Path size: %d", path.size());
+				}
             }
         }
         else if (mode == 1) {
