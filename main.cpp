@@ -32,6 +32,7 @@ void mouseMoveCallback(GLFWwindow* window, double xpos, double ypos);
 void changeToRelativeCoords(double& xpos, double& ypos);
 void verifyConfigs(bool start, bool end, bool keepSelection = false);
 void roundConfigs(bool start, bool end);
+void clearPath();
 
 bool isCreatingRectangle();
 int checkForRectangle(glm::vec2 pos);
@@ -43,6 +44,7 @@ static const int guiWidth = 300;
 static int mode = 0;
 static ControlledInputFloat L1("L1", 150.0f, 1.f, 1.f);
 static ControlledInputFloat L2("L2", 100.0f, 1.f, 1.f);
+bool drawCircles = false;
 
 Axis* axis;
 std::vector<Rectangle*> rectangles;
@@ -58,7 +60,7 @@ enum Mode { OFF, START, END };
 static Mode targetMode = Mode::START;
 
 std::vector<glm::vec2> path;
-bool drawCircles = false;
+static int pathIndex = -1;;
 
 int main() { 
     #pragma region gl_boilerplate
@@ -153,7 +155,7 @@ int main() {
 
             if (ImGui::Button("Set start")) {
                 targetMode = Mode::START;
-                path = {};
+                clearPath();
             }
             if (targetMode == Mode::START) {
                 ImGui::SameLine();
@@ -168,7 +170,7 @@ int main() {
             }
             if (startConfigs.size() > 1 && targetMode != Mode::START) {
                 if (ImGui::SliderInt("Start conf.", &selectedConfigs[0], 0, startConfigs.size() - 1)) {
-                    path = {};
+                    clearPath();
                     chain->SetAngles(startConfigs[selectedConfigs[0]].x, startConfigs[selectedConfigs[0]].y);
                 }
             }
@@ -177,7 +179,7 @@ int main() {
 
             if (ImGui::Button("Set end")){
                 targetMode = Mode::END;
-                path = {};
+                clearPath();
             }	
             if (targetMode == Mode::END) {
                 ImGui::SameLine();
@@ -193,7 +195,7 @@ int main() {
                 }
                 if (endConfigs.size() > 1) {
                     if (ImGui::SliderInt("End conf.", &selectedConfigs[1], 0, endConfigs.size() - 1)) {
-						path = {};
+                        clearPath();
                         endChain->SetAngles(endConfigs[selectedConfigs[1]].x, endConfigs[selectedConfigs[1]].y);
                     }
                 }
@@ -225,11 +227,19 @@ int main() {
 			ImGui::SeparatorText("Pathfinding");
 
             if (ImGui::Button("Find path")) {
+				clearPath();
                 path = confSpace->FindShortestPath(startConfigs[selectedConfigs[0]], endConfigs[selectedConfigs[1]]);
+				pathIndex = path.size() > 0 ? 0 : -1;
             }
             if (path.size() > 0) {
                 ImGui::SameLine();
                 ImGui::Text("Path found! Size: %d", path.size());
+
+				if (pathIndex >= 0 && pathIndex < path.size()) {
+                    ImGui::Text("Animation running...");
+					chain->SetAngles(path[pathIndex].x, path[pathIndex].y);
+					pathIndex++;
+				}
             }
         }
 
@@ -344,7 +354,7 @@ void changeToRelativeCoords(double& xpos, double& ypos)
 
 void verifyConfigs(bool start, bool end, bool keepSelection)
 {
-    path = {};
+    clearPath();
 
     if (start) {
         int deleted = 0;
@@ -386,6 +396,12 @@ void roundConfigs(bool start, bool end)
             confSpace->RoundToNearest(endConfigs[i]);
         }
     }
+}
+
+void clearPath()
+{
+	path = {};
+	pathIndex = -1;
 }
 
 bool isCreatingRectangle()
