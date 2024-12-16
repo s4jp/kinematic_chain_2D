@@ -226,7 +226,6 @@ int main() {
 
             if (ImGui::Button("Find path")) {
                 path = confSpace->FindShortestPath(startConfigs[selectedConfigs[0]], endConfigs[selectedConfigs[1]]);
-                confSpace->AddPointsToTexture(path);
             }
             if (path.size() > 0) {
                 ImGui::SameLine();

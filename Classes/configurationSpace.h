@@ -5,6 +5,7 @@
 #include "ControlledInputInt.h"
 #include "rectangle.h"
 #include "chain.h"
+#include <unordered_map>
 
 class ConfigurationSpace
 {
@@ -17,7 +18,6 @@ public:
 	void RoundToNearest(glm::vec2& angles) const;
 	bool CheckCollision(glm::vec2 angles) const;
 	std::vector<glm::vec2> FindShortestPath(glm::vec2 startIdx, glm::vec2 endIdx);
-	void AddPointsToTexture(std::vector<glm::vec2> points);
 private:
 	ControlledInputInt discrLevel;
 	std::vector<std::vector<char>> table;
@@ -27,5 +27,5 @@ private:
 
 	void ClearTable();
 	void CalculateTable(Chain* chain);
-	GLuint CreateTexture(std::vector<glm::vec2> path = {}) const;
+	GLuint CreateTexture(std::pair<std::vector<glm::vec2>, std::unordered_map<int, float>> = {}) const;
 };

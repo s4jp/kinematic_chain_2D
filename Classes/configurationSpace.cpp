@@ -1,6 +1,5 @@
 #include "configurationSpace.h"
 #include <queue>
-#include <unordered_map>
 
 const std::vector<glm::vec2> cardinalDirections = {
     {0, 1}, {1, 0}, {0, -1}, {-1, 0}
@@ -73,9 +72,11 @@ std::vector<glm::vec2> ConfigurationSpace::FindShortestPath(glm::vec2 startIdx, 
 
     std::queue<glm::vec2> q;
     std::unordered_map<int, glm::vec2> backtrack;
+	std::unordered_map<int, float> distance;
 
     q.push(startIdx);
 	backtrack[startIdx.x * n + startIdx.y] = { -1, -1 }; // guard value
+	distance[startIdx.x * n + startIdx.y] = 0;
 
     while (!q.empty()) {
         glm::vec2 current = q.front();
@@ -87,26 +88,25 @@ std::vector<glm::vec2> ConfigurationSpace::FindShortestPath(glm::vec2 startIdx, 
                 path.push_back(at);
             }
             std::reverse(path.begin(), path.end());
+
+			this->texture = CreateTexture({ path, distance });
             return path;
         }
 
         for (const auto& dir : cardinalDirections) {
             glm::vec2 neighbor = current + dir;
 			int x = modulo(neighbor.x, n), y = modulo(neighbor.y, n);
+			int neighborKey = x * n + y;
 
             if (table[x][y] == 0 && backtrack.find(x * n + y) == backtrack.end()) {
 				q.push({ x,y });
-                backtrack[x * n + y] = current;
+				backtrack[neighborKey] = current;
+				distance[neighborKey] = distance[current.x * n + current.y] + 1;
             }
         }
     }
 
-    return {};
-}
-
-void ConfigurationSpace::AddPointsToTexture(std::vector<glm::vec2> points)
-{
-	this->texture = CreateTexture(points);
+	return {};
 }
 
 void ConfigurationSpace::ClearTable()
@@ -143,7 +143,7 @@ void ConfigurationSpace::CalculateTable(Chain* chain)
 	}
 }
 
-GLuint ConfigurationSpace::CreateTexture(std::vector<glm::vec2> path) const
+GLuint ConfigurationSpace::CreateTexture(std::pair<std::vector<glm::vec2>, std::unordered_map<int, float>> path) const
 {
     int n = table.size();
     if (n == 0 || table[0].size() == 0) return 0;
@@ -153,27 +153,45 @@ GLuint ConfigurationSpace::CreateTexture(std::vector<glm::vec2> path) const
     for (int i = 0; i < n; ++i) {
         for (int j = 0; j < n; ++j) {
             int index = (i * n + j) * 4;
-            if (table[i][j] == 1) {
+            if (table[i][j] == 0) {
+                pixels[index + 0] = 0;		// R
+                pixels[index + 1] = 0;		// G
+                pixels[index + 2] = 0;		// B
+                pixels[index + 3] = 255;    // A
+            }
+            else {
                 pixels[index + 0] = 255;    // R
                 pixels[index + 1] = 255;    // G
                 pixels[index + 2] = 255;    // B
                 pixels[index + 3] = 255;    // A
             }
-            else {
-                pixels[index + 0] = 0;      // R
-                pixels[index + 1] = 0;      // G
-                pixels[index + 2] = 0;      // B
-                pixels[index + 3] = 255;    // A
-            }
         }
     }
 
-	for (const auto& p : path) {
+	std::unordered_map<int, float> distance = path.second;
+
+	float maxDistance = 0;
+	for (const auto& d : distance) {
+		maxDistance = std::max(maxDistance, d.second);
+	}
+	for (auto& d : distance) {
+		d.second = 1 - d.second / maxDistance;
+	}
+
+	for (const auto& d : distance) {
+		int index = (d.first) * 4;
+		pixels[index + 0] = 0;					// R
+		pixels[index + 1] = 255 * d.second;     // G
+		pixels[index + 2] = 0;					// B
+		pixels[index + 3] = 255;				// A
+	}
+
+	for (const auto& p : path.first) {
         int index = (p.x * n + p.y) * 4;
-		pixels[index + 0] = 255;            // R
-		pixels[index + 1] = 0;              // G
-		pixels[index + 2] = 0;              // B
-		pixels[index + 3] = 255;            // A
+		pixels[index + 0] = 255;				// R
+		pixels[index + 1] = 0;					// G
+		pixels[index + 2] = 0;					// B
+		pixels[index + 3] = 255;				// A
 	}
 
     GLuint texture;
