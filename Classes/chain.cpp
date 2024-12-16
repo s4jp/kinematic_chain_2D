@@ -92,6 +92,11 @@ void Chain::SetColor(glm::vec4 color)
 	this->color = color;
 }
 
+glm::vec2 Chain::GetLengths()
+{
+	return glm::vec2(L1, L2);
+}
+
 std::tuple<std::vector<GLfloat>, std::vector<GLuint>> Chain::InitializeAndCalculate(float L1, float L2, float angle1, float angle2)
 {
 	this->L1 = L1;

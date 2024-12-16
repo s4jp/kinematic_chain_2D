@@ -7,13 +7,24 @@ ConfigurationSpace::ConfigurationSpace(int discrLevel)
 	this->texture = CreateTexture();
 }
 
-void ConfigurationSpace::RenderImGui(Chain* chain, std::vector<Rectangle*> rectangles)
+bool ConfigurationSpace::RenderImGui(Chain* chain, std::vector<Rectangle*> rectangles)
 {
+	bool change = false;
+
 	discrLevel.Render();
 	if (ImGui::Button("Calculate")) {
-		CalculateTable(chain, rectangles);
+		this->rectangles = rectangles;
+		this->lengths = chain->GetLengths();
+		CalculateTable(chain);
 		texture = CreateTexture();
+		change = true;
 	}
+	if (this->rectangles != rectangles || this->lengths != chain->GetLengths()) {
+		ImGui::SameLine();
+		ImGui::Text("Pending changes!");
+	}
+
+	return change;
 }
 
 void ConfigurationSpace::RenderTexture() const
@@ -24,6 +35,26 @@ void ConfigurationSpace::RenderTexture() const
     ImGui::End();
 }
 
+void ConfigurationSpace::RoundToNearest(glm::vec2& angles) const
+{
+	int n = discrLevel.GetValue();
+	float step = 360.0f / n;
+	angles.x = round(angles.x / step) * step;
+	angles.y = round(angles.y / step) * step;
+
+	if (angles.x >= 360.0f) angles.x = 0.0f;
+	if (angles.y >= 360.0f) angles.y = 0.0f;
+}
+
+bool ConfigurationSpace::CheckCollision(glm::vec2 angles) const
+{
+	int n = discrLevel.GetValue();
+	float step = 360.0f / n;
+	int i = (int)(angles.x / step);
+	int j = (int)(angles.y / step);
+	return table[i][j];
+}
+
 void ConfigurationSpace::ClearTable()
 {
 	int n = discrLevel.GetValue();
@@ -31,7 +62,7 @@ void ConfigurationSpace::ClearTable()
 	table.resize(n, std::vector<char>(n, 0));
 }
 
-void ConfigurationSpace::CalculateTable(Chain* chain, std::vector<Rectangle*> rectangles)
+void ConfigurationSpace::CalculateTable(Chain* chain)
 {
 	this->ClearTable();
 

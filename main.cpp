@@ -30,6 +30,8 @@
 void mouse_button_callback(GLFWwindow* window, int button, int action, int mods);
 void mouseMoveCallback(GLFWwindow* window, double xpos, double ypos);
 void changeToRelativeCoords(double& xpos, double& ypos);
+void verifyConfigs(bool start, bool end, bool keepSelection = false);
+void roundConfigs(bool start, bool end);
 
 bool isCreatingRectangle();
 int checkForRectangle(glm::vec2 pos);
@@ -213,7 +215,8 @@ int main() {
         }
 
 		ImGui::SeparatorText("Configuration space");
-        confSpace->RenderImGui(chain, rectangles);
+        if (confSpace->RenderImGui(chain, rectangles))
+			verifyConfigs(true, true, true);
 
         ImGui::End();
 
@@ -271,16 +274,14 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
             if (targetMode == Mode::START) {
                 targets[0] = glm::vec2(xpos, ypos);
                 startConfigs = chain->InverseKinematics(targets[0]);
-                selectedConfigs[0] = startConfigs.size() - 1;
-				if (selectedConfigs[0] >= 0)
-                    chain->SetAngles(startConfigs[selectedConfigs[0]].x, startConfigs[selectedConfigs[0]].y);
+				roundConfigs(true, false);
+				verifyConfigs(true, false);
             }
             else if (targetMode == Mode::END) {
                 targets[1] = glm::vec2(xpos, ypos);
                 endConfigs = chain->InverseKinematics(targets[1]);
-                selectedConfigs[1] = endConfigs.size() - 1;
-				if (selectedConfigs[1] >= 0)
-				    endChain->SetAngles(endConfigs[selectedConfigs[1]].x, endConfigs[selectedConfigs[1]].y);
+				roundConfigs(false, true);
+                verifyConfigs(false, true);
             }
 
             targetMode = Mode::OFF;
@@ -321,6 +322,50 @@ void changeToRelativeCoords(double& xpos, double& ypos)
 	xpos -= viewportSize.x / 2.f;
 	ypos -= viewportSize.y / 2.f;
 	ypos *= -1.f;
+}
+
+void verifyConfigs(bool start, bool end, bool keepSelection)
+{
+    if (start) {
+        int deleted = 0;
+        for (int i = 0; i - deleted < startConfigs.size(); i++) {
+            if (confSpace->CheckCollision(startConfigs[i - deleted])) {
+                startConfigs.erase(startConfigs.begin() + i - deleted);
+				deleted++;
+            }
+        }
+        selectedConfigs[0] = keepSelection ? selectedConfigs[0] - deleted : startConfigs.size() - 1;
+		selectedConfigs[0] = glm::clamp(selectedConfigs[0], -1, (int)startConfigs.size() - 1);
+        if (selectedConfigs[0] >= 0)
+            chain->SetAngles(startConfigs[selectedConfigs[0]].x, startConfigs[selectedConfigs[0]].y);
+    }
+	if (end) {
+        int deleted = 0;
+        for (int i = 0; i - deleted < endConfigs.size(); i++) {
+            if (confSpace->CheckCollision(endConfigs[i - deleted])) {
+                endConfigs.erase(endConfigs.begin() + i - deleted);
+                deleted++;
+            }
+        }
+        selectedConfigs[1] = keepSelection ? selectedConfigs[1] - deleted : endConfigs.size() - 1;
+		selectedConfigs[1] = glm::clamp(selectedConfigs[1], -1, (int)endConfigs.size() - 1);
+        if (selectedConfigs[1] >= 0)
+            endChain->SetAngles(endConfigs[selectedConfigs[1]].x, endConfigs[selectedConfigs[1]].y);
+	}
+}
+
+void roundConfigs(bool start, bool end)
+{
+    if (start) {
+        for (int i = 0; i < startConfigs.size(); i++) {
+            confSpace->RoundToNearest(startConfigs[i]);
+        }
+    }
+    if (end) {
+        for (int i = 0; i < endConfigs.size(); i++) {
+            confSpace->RoundToNearest(endConfigs[i]);
+        }
+    }
 }
 
 bool isCreatingRectangle()

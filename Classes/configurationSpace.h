@@ -10,15 +10,20 @@ class ConfigurationSpace
 {
 public:
 	ConfigurationSpace(int discrLevel = 360);
-	void RenderImGui(Chain* chain, std::vector<Rectangle*> rectangles);
+
+	bool RenderImGui(Chain* chain, std::vector<Rectangle*> rectangles);
 	void RenderTexture() const;
 
+	void RoundToNearest(glm::vec2& angles) const;
+	bool CheckCollision(glm::vec2 angles) const;
 private:
 	ControlledInputInt discrLevel;
 	std::vector<std::vector<char>> table;
 	GLuint texture;
+	std::vector<Rectangle*> rectangles;
+	glm::vec2 lengths;
 
 	void ClearTable();
-	void CalculateTable(Chain* chain, std::vector<Rectangle*> rectangles);
+	void CalculateTable(Chain* chain);
 	GLuint CreateTexture() const;
 };

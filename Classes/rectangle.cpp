@@ -56,13 +56,65 @@ void Rectangle::Print() const
 
 char Rectangle::CheckCollision(const std::vector<glm::vec2> joints) const
 {
-	glm::vec4 rect = GetRectangle();
-	for (int i = 0; i < joints.size(); i++) {
-		if (joints[i].x >= rect.x && joints[i].x <= rect.z &&
-			joints[i].y >= rect.y && joints[i].y <= rect.w)
-			return true;
-	}
-	return false;
+    glm::vec4 rect = GetRectangle();
+
+    auto isInside = [&rect](const glm::vec2& point) -> bool {
+        return point.x >= rect.x && point.x <= rect.z &&
+            point.y >= rect.y && point.y <= rect.w;
+     };
+
+    auto lineIntersect = [](const glm::vec2& p1, const glm::vec2& p2, const glm::vec2& q1, const glm::vec2& q2) -> bool {
+        auto orientation = [](const glm::vec2& a, const glm::vec2& b, const glm::vec2& c) -> float {
+            return (b.y - a.y) * (c.x - b.x) - (b.x - a.x) * (c.y - b.y);
+            };
+
+        auto onSegment = [](const glm::vec2& a, const glm::vec2& b, const glm::vec2& c) -> bool {
+            return c.x >= std::min(a.x, b.x) && c.x <= std::max(a.x, b.x) &&
+                c.y >= std::min(a.y, b.y) && c.y <= std::max(a.y, b.y);
+            };
+
+        float o1 = orientation(p1, p2, q1);
+        float o2 = orientation(p1, p2, q2);
+        float o3 = orientation(q1, q2, p1);
+        float o4 = orientation(q1, q2, p2);
+
+        if (o1 * o2 < 0 && o3 * o4 < 0)
+            return true;
+
+        // on-line cases
+        if (o1 == 0 && onSegment(p1, p2, q1)) return true;
+        if (o2 == 0 && onSegment(p1, p2, q2)) return true;
+        if (o3 == 0 && onSegment(q1, q2, p1)) return true;
+        if (o4 == 0 && onSegment(q1, q2, p2)) return true;
+
+        return false;
+     };
+
+    glm::vec2 rectEdges[] = {
+        {rect.x, rect.y}, {rect.z, rect.y}, {rect.z, rect.w}, {rect.x, rect.w}
+    };
+
+    for (auto& joint : joints) {
+        if (isInside(joint)) {
+            return true;
+        }
+    }
+
+    for (size_t i = 0; i < joints.size() - 1; ++i) {
+        glm::vec2 joint1 = joints[i];
+        glm::vec2 joint2 = joints[i + 1];
+
+        for (int j = 0; j < 4; ++j) {
+            glm::vec2 edgeStart = rectEdges[j];
+            glm::vec2 edgeEnd = rectEdges[(j + 1) % 4];
+
+            if (lineIntersect(joint1, joint2, edgeStart, edgeEnd)) {
+                return true;
+            }
+        }
+    }
+
+    return false;
 }
 
 std::tuple<std::vector<GLfloat>, std::vector<GLuint>> Rectangle::Calculate() const
