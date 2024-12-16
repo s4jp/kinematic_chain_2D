@@ -63,14 +63,15 @@ bool ConfigurationSpace::CheckCollision(glm::vec2 angles) const
 
 std::vector<glm::vec2> ConfigurationSpace::FindShortestPath(glm::vec2 startIdx, glm::vec2 endIdx)
 {
-    int n = table.size();
+	auto modulo = [](int x, int n) {
+		return (x % n + n) % n;
+	};
 
-    auto isValid = [&](int x, int y) {
-        return x >= 0 && y >= 0 && x < n && y < n && table[x][y] == 0;
-    };
+	int n = table.size();
 
     std::queue<glm::vec2> q;
     std::unordered_map<int, glm::vec2> backtrack;
+
     q.push(startIdx);
 	backtrack[startIdx.x * n + startIdx.y] = { -1, -1 }; // guard value
 
@@ -89,10 +90,10 @@ std::vector<glm::vec2> ConfigurationSpace::FindShortestPath(glm::vec2 startIdx, 
 
         for (const auto& dir : cardinalDirections) {
             glm::vec2 neighbor = current + dir;
-            int x = neighbor.x, y = neighbor.y;
+			int x = modulo(neighbor.x, n), y = modulo(neighbor.y, n);
 
-            if (isValid(x, y) && backtrack.find(x * n + y) == backtrack.end()) {
-                q.push(neighbor);
+            if (table[x][y] == 0 && backtrack.find(x * n + y) == backtrack.end()) {
+				q.push({ x,y });
                 backtrack[x * n + y] = current;
             }
         }
