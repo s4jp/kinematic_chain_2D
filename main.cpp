@@ -45,7 +45,15 @@ static ControlledInputFloat L2("L2", 100.0f, 1.f, 1.f);
 Axis* axis;
 std::vector<Rectangle*> rectangles;
 Chain* chain;
+Chain* endChain;
 ConfigurationSpace* confSpace;
+
+static glm::vec2 targets[2] = { glm::vec2(0.f), glm::vec2(0.f) };
+static std::vector<glm::vec2> startConfigs;
+static std::vector<glm::vec2> endConfigs;
+static int selectedConfigs[2] = { -1, -1 };
+enum Mode { OFF, START, END };
+static Mode targetMode = Mode::START;
 
 int main() { 
     #pragma region gl_boilerplate
@@ -85,6 +93,8 @@ int main() {
 	// objects
 	axis = new Axis(viewportSize);
 	chain = new Chain(L1.GetValue(), L2.GetValue());
+	endChain = new Chain(L1.GetValue(), L2.GetValue());
+	endChain->SetColor(glm::vec4(1.f, 0.5f, 0.5f, 1.f));
 	confSpace = new ConfigurationSpace();
 
     #pragma region imgui_boilerplate
@@ -117,7 +127,10 @@ int main() {
 		axis->Render(colorLoc);
 		for (auto& r : rectangles)
 			r->Render(colorLoc);
-		chain->Render(colorLoc);
+		if (selectedConfigs[0] >= 0)
+		    chain->Render(colorLoc);
+        if (selectedConfigs[1] >= 0)
+			endChain->Render(colorLoc);
 
         // imgui rendering
         ImGui::Begin("Menu", 0,
@@ -128,18 +141,78 @@ int main() {
 		ImGui::RadioButton("Positions setup", &mode, 0); ImGui::SameLine();
 		ImGui::RadioButton("Obstacles setup", &mode, 1);
 
+        if (mode == 0) {
+			ImGui::SeparatorText("Targets");
+
+            if (ImGui::Button("Set start"))
+                targetMode = Mode::START;
+            if (targetMode == Mode::START) {
+                ImGui::SameLine();
+                ImGui::Text("Selection active!");
+            }
+            if (selectedConfigs[0] >= 0 && targetMode != Mode::START) {
+                ImGui::SameLine();
+                ImGui::Text("Position: %.0f, %.0f", targets[0].x, targets[0].y);
+
+                ImGui::Spacing();
+                ImGui::Text(u8"Config.: q1 = %.2f°, q2 = %.2f°", startConfigs[selectedConfigs[0]].x, startConfigs[selectedConfigs[0]].y);
+            }
+            if (startConfigs.size() > 1 && targetMode != Mode::START) {
+                if (ImGui::SliderInt("Start conf.", &selectedConfigs[0], 0, startConfigs.size() - 1)) {
+                    chain->SetAngles(startConfigs[selectedConfigs[0]].x, startConfigs[selectedConfigs[0]].y);
+                }
+            }
+
+            ImGui::Spacing(); ImGui::Separator(); ImGui::Spacing();
+
+			if (ImGui::Button("Set end"))
+				targetMode = Mode::END;
+            if (targetMode == Mode::END) {
+                ImGui::SameLine();
+                ImGui::Text("Selection active!");
+            }
+            else {
+                if (selectedConfigs[1] >= 0) {
+                    ImGui::SameLine();
+                    ImGui::Text("Position: %.0f, %.0f", targets[1].x, targets[1].y);
+
+                    ImGui::Spacing();
+                    ImGui::Text(u8"Config.: q1 = %.2f°, q2 = %.2f°", endConfigs[selectedConfigs[1]].x, endConfigs[selectedConfigs[1]].y);
+                }
+                if (endConfigs.size() > 1) {
+                    if (ImGui::SliderInt("End conf.", &selectedConfigs[1], 0, endConfigs.size() - 1)) {
+                        endChain->SetAngles(endConfigs[selectedConfigs[1]].x, endConfigs[selectedConfigs[1]].y);
+                    }
+                }
+            }
+
+            if (selectedConfigs[0] >= 0 && selectedConfigs[1] >= 0){
+                ImGui::Spacing(); ImGui::Spacing();
+
+                if (ImGui::Button("Find path")) {
+                    // todo
+                }
+            }
+        }
+        else if (mode == 1) {
+            ImGui::Spacing();
+
+            if (ImGui::Button("Clear all obstacles")) {
+                for (auto& r : rectangles)
+                    r->Delete();
+                rectangles.clear();
+            }
+        }
+
 		ImGui::SeparatorText("Parameters");
 		L1.Render();
 		L2.Render();
-		if (ImGui::Button("Set lengths")) 
-            chain->UpdateLengths(L1.GetValue(), L2.GetValue());
+        if (ImGui::Button("Set lengths")){
+			chain->UpdateLengths(L1.GetValue(), L2.GetValue());
+			endChain->UpdateLengths(L1.GetValue(), L2.GetValue());
+        }
 
 		ImGui::SeparatorText("Configuration space");
-
-		glm::vec2 angles = chain->GetAngles();
-		ImGui::Text(u8"Coords: a1 = %.2f°, a2 = %.2f°", angles.x, angles.y);
-
-		ImGui::Spacing();
         confSpace->RenderImGui(chain, rectangles);
 
         ImGui::End();
@@ -165,6 +238,7 @@ int main() {
 	for (auto& r : rectangles)
 		r->Delete();
 	chain->Delete();
+	endChain->Delete();
 
     glfwDestroyWindow(window);
     glfwTerminate();
@@ -191,6 +265,26 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
                 rectangles.push_back(new Rectangle(glm::vec2(xpos, ypos)));
             }
         }
+        else if (mode == 0) {
+            if (targetMode == Mode::OFF) return;
+
+            if (targetMode == Mode::START) {
+                targets[0] = glm::vec2(xpos, ypos);
+                startConfigs = chain->InverseKinematics(targets[0]);
+                selectedConfigs[0] = startConfigs.size() - 1;
+				if (selectedConfigs[0] >= 0)
+                    chain->SetAngles(startConfigs[selectedConfigs[0]].x, startConfigs[selectedConfigs[0]].y);
+            }
+            else if (targetMode == Mode::END) {
+                targets[1] = glm::vec2(xpos, ypos);
+                endConfigs = chain->InverseKinematics(targets[1]);
+                selectedConfigs[1] = endConfigs.size() - 1;
+				if (selectedConfigs[1] >= 0)
+				    endChain->SetAngles(endConfigs[selectedConfigs[1]].x, endConfigs[selectedConfigs[1]].y);
+            }
+
+            targetMode = Mode::OFF;
+        }
 	}
 
 	if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_PRESS) {
@@ -202,6 +296,9 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
                 rectangles[i]->Delete();
                 rectangles.erase(rectangles.begin() + i);
             }
+        }
+        else if (mode == 0) {
+			targetMode = Mode::OFF;
         }
 	}
 }

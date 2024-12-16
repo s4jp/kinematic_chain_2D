@@ -14,7 +14,7 @@ void Chain::Render(int colorLoc)
 
 	glLineWidth(lineWidth);
 
-	glUniform4fv(colorLoc, 1, glm::value_ptr(glm::vec4(1,1,1,1)));
+	glUniform4fv(colorLoc, 1, glm::value_ptr(color));
 	glDrawElements(GL_LINE_STRIP, indices_count, GL_UNSIGNED_INT, 0);
 
 	glLineWidth(defaultLineWidth);
@@ -28,11 +28,6 @@ void Chain::UpdateLengths(float L1, float L2)
 	this->L2 = L2;
 
 	RefreshBuffers(Calculate());
-}
-
-glm::vec2 Chain::GetAngles() const
-{
-	return glm::vec2(angle1, angle2);
 }
 
 void Chain::SetAngles(float a1, float a2)
@@ -77,14 +72,24 @@ std::vector<glm::vec2> Chain::InverseKinematics(glm::vec2 target) const
 	float a1 = calculateA1(a2);
 	float a1alt = calculateA1(a2alt);
 
+	NormalizeAngleInRadians(a1);
+	NormalizeAngleInRadians(a1alt);
+	NormalizeAngleInRadians(a2);
+	NormalizeAngleInRadians(a2alt);
+
 	angles.push_back({ glm::degrees(a1), glm::degrees(a2) });
 	if (abs(a1 - a1alt) > sameAngleThreshold && 
 		abs(a2 - a2alt) > sameAngleThreshold && 
-		abs(a1 - a1alt) < 360.f - sameAngleThreshold && 
-		abs(a2 - a2alt) < 360.f - sameAngleThreshold)
+		abs(a1 - a1alt) < 2 * M_PI - sameAngleThreshold && 
+		abs(a2 - a2alt) < 2 * M_PI - sameAngleThreshold)
 		angles.push_back({ glm::degrees(a1alt), glm::degrees(a2alt) });
 
 	return angles;
+}
+
+void Chain::SetColor(glm::vec4 color)
+{
+	this->color = color;
 }
 
 std::tuple<std::vector<GLfloat>, std::vector<GLuint>> Chain::InitializeAndCalculate(float L1, float L2, float angle1, float angle2)
@@ -97,9 +102,17 @@ std::tuple<std::vector<GLfloat>, std::vector<GLuint>> Chain::InitializeAndCalcul
 	return Calculate();
 }
 
-std::tuple<std::vector<GLfloat>, std::vector<GLuint>> Chain::Calculate()
+void Chain::NormalizeAngleInRadians(float& angle) const
 {
-	joints = this->CalculateJoints(this->angle1, this->angle2);
+	while (angle < 0.f)
+		angle += 2.f * M_PI;
+	while (angle >= 2.f * M_PI)
+		angle -= 2.f * M_PI;
+}
+
+std::tuple<std::vector<GLfloat>, std::vector<GLuint>> Chain::Calculate() const
+{
+	auto joints = this->CalculateJoints(this->angle1, this->angle2);
 
 	std::vector<GLfloat> vertices = {
 		joints[0].x, joints[0].y,
