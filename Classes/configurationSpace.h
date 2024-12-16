@@ -9,7 +9,7 @@
 class ConfigurationSpace
 {
 public:
-	ConfigurationSpace(int discrLevel = 360);
+	ConfigurationSpace(Chain* chain, std::vector<Rectangle*> rectangles, int discrLevel = 360);
 
 	bool RenderImGui(Chain* chain, std::vector<Rectangle*> rectangles);
 	void RenderTexture() const;

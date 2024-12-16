@@ -8,6 +8,7 @@ public:
 	Chain(float L1, float L2, float angle1 = 0, float angle2 = 0);
 
 	void Render(int colorLoc) override;
+	void RenderCircles(int colorLoc);
 
 	void UpdateLengths(float L1, float L2);
 	void SetAngles(float a1, float a2);

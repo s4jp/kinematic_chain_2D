@@ -58,6 +58,7 @@ enum Mode { OFF, START, END };
 static Mode targetMode = Mode::START;
 
 std::vector<glm::vec2> path;
+bool drawCircles = false;
 
 int main() { 
     #pragma region gl_boilerplate
@@ -99,7 +100,7 @@ int main() {
 	chain = new Chain(L1.GetValue(), L2.GetValue());
 	endChain = new Chain(L1.GetValue(), L2.GetValue());
 	endChain->SetColor(glm::vec4(1.f, 0.5f, 0.5f, 1.f));
-	confSpace = new ConfigurationSpace();
+	confSpace = new ConfigurationSpace(chain, rectangles);
 
     #pragma region imgui_boilerplate
     IMGUI_CHECKVERSION();
@@ -135,6 +136,8 @@ int main() {
 		    chain->Render(colorLoc);
         if (selectedConfigs[1] >= 0)
 			endChain->Render(colorLoc);
+		if (drawCircles)
+		    chain->RenderCircles(colorLoc);
 
         // imgui rendering
         ImGui::Begin("Menu", 0,
@@ -148,8 +151,10 @@ int main() {
         if (mode == 0) {
 			ImGui::SeparatorText("Targets");
 
-            if (ImGui::Button("Set start"))
+            if (ImGui::Button("Set start")) {
                 targetMode = Mode::START;
+                path = {};
+            }
             if (targetMode == Mode::START) {
                 ImGui::SameLine();
                 ImGui::Text("Selection active!");
@@ -163,14 +168,17 @@ int main() {
             }
             if (startConfigs.size() > 1 && targetMode != Mode::START) {
                 if (ImGui::SliderInt("Start conf.", &selectedConfigs[0], 0, startConfigs.size() - 1)) {
+                    path = {};
                     chain->SetAngles(startConfigs[selectedConfigs[0]].x, startConfigs[selectedConfigs[0]].y);
                 }
             }
 
             ImGui::Spacing(); ImGui::Separator(); ImGui::Spacing();
 
-			if (ImGui::Button("Set end"))
-				targetMode = Mode::END;
+            if (ImGui::Button("Set end")){
+                targetMode = Mode::END;
+                path = {};
+            }	
             if (targetMode == Mode::END) {
                 ImGui::SameLine();
                 ImGui::Text("Selection active!");
@@ -185,23 +193,10 @@ int main() {
                 }
                 if (endConfigs.size() > 1) {
                     if (ImGui::SliderInt("End conf.", &selectedConfigs[1], 0, endConfigs.size() - 1)) {
+						path = {};
                         endChain->SetAngles(endConfigs[selectedConfigs[1]].x, endConfigs[selectedConfigs[1]].y);
                     }
                 }
-            }
-
-            if (selectedConfigs[0] >= 0 && selectedConfigs[1] >= 0){
-                ImGui::Spacing(); ImGui::Spacing();
-
-                if (ImGui::Button("Find path")) {
-					path = confSpace->FindShortestPath(startConfigs[selectedConfigs[0]], endConfigs[selectedConfigs[1]]);
-					confSpace->AddPointsToTexture(path);
-                    //confSpace->AddPointsToTexture({ startConfigs[selectedConfigs[0]], endConfigs[selectedConfigs[1]] });
-                }
-				if (path.size() > 0) {
-					ImGui::SameLine();
-					ImGui::Text("Path size: %d", path.size());
-				}
             }
         }
         else if (mode == 1) {
@@ -225,6 +220,22 @@ int main() {
 		ImGui::SeparatorText("Configuration space");
         if (confSpace->RenderImGui(chain, rectangles))
 			verifyConfigs(true, true, true);
+
+        if (selectedConfigs[0] >= 0 && selectedConfigs[1] >= 0) {
+			ImGui::SeparatorText("Pathfinding");
+
+            if (ImGui::Button("Find path")) {
+                path = confSpace->FindShortestPath(startConfigs[selectedConfigs[0]], endConfigs[selectedConfigs[1]]);
+                confSpace->AddPointsToTexture(path);
+            }
+            if (path.size() > 0) {
+                ImGui::SameLine();
+                ImGui::Text("Path found! Size: %d", path.size());
+            }
+        }
+
+		ImGui::SeparatorText("Other");
+		ImGui::Checkbox("Show guide circles", &drawCircles);
 
         ImGui::End();
 
@@ -334,6 +345,8 @@ void changeToRelativeCoords(double& xpos, double& ypos)
 
 void verifyConfigs(bool start, bool end, bool keepSelection)
 {
+    path = {};
+
     if (start) {
         int deleted = 0;
         for (int i = 0; i - deleted < startConfigs.size(); i++) {

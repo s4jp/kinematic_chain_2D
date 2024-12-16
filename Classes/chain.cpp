@@ -4,6 +4,8 @@
 const float lineWidth = 10.0f;
 const float defaultLineWidth = 1.0f;
 const float sameAngleThreshold = 0.1f;
+const int circleVertices = 360;
+const glm::vec4 circleColor = glm::vec4(0.5f, 0.5f, 0.5f, 1.f);
 
 Chain::Chain(float L1, float L2, float angle1, float angle2) 
 	: Figure(InitializeAndCalculate(L1, L2, angle1, angle2)) {}
@@ -15,9 +17,21 @@ void Chain::Render(int colorLoc)
 	glLineWidth(lineWidth);
 
 	glUniform4fv(colorLoc, 1, glm::value_ptr(color));
-	glDrawElements(GL_LINE_STRIP, indices_count, GL_UNSIGNED_INT, 0);
+	glDrawElements(GL_LINE_STRIP, 3, GL_UNSIGNED_INT, 0);
 
 	glLineWidth(defaultLineWidth);
+
+	vao.Unbind();
+}
+
+void Chain::RenderCircles(int colorLoc)
+{
+	vao.Bind();
+
+	glUniform4fv(colorLoc, 1, glm::value_ptr(circleColor));
+
+	glDrawElements(GL_LINE_LOOP, circleVertices, GL_UNSIGNED_INT, (void*)(3 * sizeof(GLuint)));
+	glDrawElements(GL_LINE_LOOP, circleVertices, GL_UNSIGNED_INT, (void*)((3 + circleVertices) * sizeof(GLuint)));
 
 	vao.Unbind();
 }
@@ -117,16 +131,41 @@ void Chain::NormalizeAngleInRadians(float& angle) const
 
 std::tuple<std::vector<GLfloat>, std::vector<GLuint>> Chain::Calculate() const
 {
+	auto calculateCircleVertices = [](float radius) {
+		std::vector<GLfloat> vertices;
+		vertices.reserve(circleVertices * 2);
+
+		const float angleIncrement = 2.0f * static_cast<float>(M_PI) / static_cast<float>(circleVertices);
+
+		for (int i = 0; i < circleVertices; ++i) {
+			float angle = i * angleIncrement;
+			vertices.push_back(radius * std::cos(angle));
+			vertices.push_back(radius * std::sin(angle));
+		}
+
+		return vertices;
+	};
+
 	auto joints = this->CalculateJoints(this->angle1, this->angle2);
+	auto circle1 = calculateCircleVertices(this->L1);
+	auto circle2 = calculateCircleVertices(this->L1 + this->L2);
 
 	std::vector<GLfloat> vertices = {
 		joints[0].x, joints[0].y,
 		joints[1].x, joints[1].y,
 		joints[2].x, joints[2].y,
 	};
-	std::vector<GLuint> indices = {
-		0, 1, 2,
-	};
 
-	return std::make_tuple(vertices, indices);
+	std::vector<GLfloat> combined;
+	combined.reserve(vertices.size() + circle1.size() + circle2.size());
+	combined.insert(combined.end(), vertices.begin(), vertices.end());
+	combined.insert(combined.end(), circle1.begin(), circle1.end());
+	combined.insert(combined.end(), circle2.begin(), circle2.end());
+	
+	std::vector<GLuint> indices = {};
+	for (GLuint i = 0; i <= 2*circleVertices + 2; ++i) {
+		indices.push_back(i);
+	}
+
+	return std::make_tuple(combined, indices);
 }

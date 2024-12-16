@@ -6,9 +6,11 @@ const std::vector<glm::vec2> cardinalDirections = {
     {0, 1}, {1, 0}, {0, -1}, {-1, 0}
 };
 
-ConfigurationSpace::ConfigurationSpace(int discrLevel) 
+ConfigurationSpace::ConfigurationSpace(Chain* chain, std::vector<Rectangle*> rectangles, int discrLevel)
 	: discrLevel("Discr. level", discrLevel, 1, 1)
 {
+	this->rectangles = rectangles;
+	this->lengths = chain->GetLengths();
 	this->ClearTable();
 	this->texture = CreateTexture();
 }
