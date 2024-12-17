@@ -1,5 +1,6 @@
 #include "configurationSpace.h"
 #include <queue>
+#include <iostream>
 
 const std::vector<glm::vec2> cardinalDirections = {
     {0, 1}, {1, 0}, {0, -1}, {-1, 0}
@@ -9,7 +10,7 @@ ConfigurationSpace::ConfigurationSpace(Chain* chain, std::vector<Rectangle*> rec
 	: discrLevel("Discr. level", discrLevel, 1, 1)
 {
 	this->rectangles = rectangles;
-	this->rectanglesLengths = GetRectangles(rectangles);
+	this->rectanglesCoords = GetRectangles(rectangles);
 	this->lengths = chain->GetLengths();
 	this->ClearTable();
 	this->texture = CreateTexture();
@@ -22,7 +23,7 @@ bool ConfigurationSpace::RenderImGui(Chain* chain, std::vector<Rectangle*> recta
 	discrLevel.Render();
 	if (ImGui::Button("Calculate")) {
 		this->rectangles = rectangles;
-		this->rectanglesLengths = GetRectangles(rectangles);
+		this->rectanglesCoords = GetRectangles(rectangles);
 		this->lengths = chain->GetLengths();
 		CalculateTable(chain);
 		texture = CreateTexture();
@@ -123,6 +124,7 @@ std::vector<glm::vec2> ConfigurationSpace::FindShortestPath(glm::vec2 startConf 
         }
     }
 
+	this->texture = CreateTexture({ {startIdx, endIdx }, distance });
 	return {};
 }
 
@@ -135,13 +137,15 @@ glm::vec2 ConfigurationSpace::GetAngles(const glm::vec2 indices) const
 
 bool ConfigurationSpace::IsRectangleDiscrepancy(const std::vector<Rectangle*>& rectangles) const
 {
-	std::vector<glm::vec4> newRectangles = GetRectangles(rectangles);
+	std::vector<glm::vec4> newRectanglesCoords = GetRectangles(rectangles);
 
-	if (this->rectanglesLengths.size() != newRectangles.size()) return true;
+	if (this->rectanglesCoords.size() != newRectanglesCoords.size()) return true;
 
 	for (int i = 0; i < rectangles.size(); i++) {
-		if (this->rectanglesLengths[i] != newRectangles[i]) return true;
+		if (this->rectanglesCoords[i] != newRectanglesCoords[i]) return true;
 	}
+
+	return false;
 }
 
 std::vector<glm::vec4> ConfigurationSpace::GetRectangles(const std::vector<Rectangle*>& rectangles) const

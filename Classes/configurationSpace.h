@@ -21,7 +21,7 @@ private:
 	ControlledInputInt discrLevel;
 	std::vector<std::vector<char>> table;
 	GLuint texture;
-	std::vector<glm::vec4> rectanglesLengths;
+	std::vector<glm::vec4> rectanglesCoords;
 	std::vector<Rectangle*> rectangles;
 	glm::vec2 lengths;
 

@@ -24,6 +24,14 @@ void Rectangle::Render(int colorLoc)
 	vao.Unbind();
 }
 
+void Rectangle::RenderSelect(int colorLoc, bool selected)
+{
+	vao.Bind();
+	glUniform4fv(colorLoc, 1, glm::value_ptr(GetColor(selected)));
+	glDrawElements(GL_TRIANGLES, indices_count, GL_UNSIGNED_INT, 0);
+	vao.Unbind();
+}
+
 std::tuple<std::vector<GLfloat>, std::vector<GLuint>> Rectangle::InitializeAndCalculate(glm::vec2 startPos)
 {
 	this->startPos = startPos;
@@ -46,8 +54,11 @@ glm::vec4 Rectangle::GetRectangle() const
 	return glm::vec4(start, end);
 }
 
-glm::vec4 Rectangle::GetColor() const
+glm::vec4 Rectangle::GetColor(bool selected) const
 {
+	if (selected)
+		return glm::vec4(0.7f, 0.0f, 0.0f, 1.0f);
+
 	if (inCreation)
 		// very light gray
 		return glm::vec4(0.8f, 0.8f, 0.8f, 1.0f);

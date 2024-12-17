@@ -60,7 +60,7 @@ static Mode targetMode = Mode::START;
 
 std::vector<glm::vec2> path;
 static float pathIndex = -1;
-static ControlledInputInt speed("Speed [%]", 100, 1, 1);
+static ControlledInputInt speed("Speed [%]", 25, 1, 1);
 
 static int selectedRectangle = -1;
 
@@ -133,9 +133,9 @@ int main() {
         glUniform2fv(viewportSizeLoc, 1, glm::value_ptr(viewportSize));
 
         // render
-		axis->Render(colorLoc);
-		for (auto& r : rectangles)
-			r->Render(colorLoc);
+        axis->Render(colorLoc);
+        for (int i = 0; i < rectangles.size(); i++)
+			rectangles[i]->RenderSelect(colorLoc, selectedRectangle == i);
 		if (selectedConfigs[0] >= 0)
 		    chain->Render(colorLoc);
         if (selectedConfigs[1] >= 0)
@@ -248,7 +248,7 @@ int main() {
         if (selectedConfigs[0] >= 0 && selectedConfigs[1] >= 0) {
 			ImGui::SeparatorText("Pathfinding");
 
-            if (ImGui::Button("Find path")) {
+            if (ImGui::Button("Find and run")) {
 				clearPath();
                 path = confSpace->FindShortestPath(startConfigs[selectedConfigs[0]], endConfigs[selectedConfigs[1]]);
 				pathIndex = path.size() > 0 ? 0 : -1;
@@ -384,7 +384,9 @@ void calculateAndVerifyConfigs(bool start, bool end, bool keepSelection)
         glm::vec2 selectedConfig = (selectedConfigs[0] >= 0 && keepSelection) ? startConfigs[selectedConfigs[0]] : glm::vec2(-1.f);
         selectedConfigs[0] = -1;
 
-        startConfigs = chain->InverseKinematics(targets[0]);
+		if (targets[0] != glm::vec2(0.f))
+            startConfigs = chain->InverseKinematics(targets[0]);
+
         for (int i = 0; i < startConfigs.size(); i++) {
             if (confSpace->CheckCollision(startConfigs[i])) {
                 startConfigs.erase(startConfigs.begin() + i);
@@ -402,7 +404,9 @@ void calculateAndVerifyConfigs(bool start, bool end, bool keepSelection)
         glm::vec2 selectedConfig = (selectedConfigs[1] >= 0 && keepSelection) ? endConfigs[selectedConfigs[1]] : glm::vec2(-1.f);
         selectedConfigs[1] = -1;
 
-        endConfigs = chain->InverseKinematics(targets[1]);
+		if (targets[1] != glm::vec2(0.f))
+            endConfigs = chain->InverseKinematics(targets[1]);
+
         for (int i = 0; i < endConfigs.size(); i++) {
             if (confSpace->CheckCollision(endConfigs[i])) {
                 endConfigs.erase(endConfigs.begin() + i);
