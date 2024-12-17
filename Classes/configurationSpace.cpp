@@ -2,6 +2,12 @@
 #include <queue>
 #include <iostream>
 
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
+
+const float flashDuration = 0.5f;
+
 const std::vector<glm::vec2> cardinalDirections = {
     {0, 1}, {1, 0}, {0, -1}, {-1, 0}
 };
@@ -28,11 +34,15 @@ bool ConfigurationSpace::RenderImGui(Chain* chain, std::vector<Rectangle*> recta
 		CalculateTable(chain);
 		texture = CreateTexture();
 		change = true;
+		timeElapsed = 0.0f;
 	}
 
-	if (IsRectangleDiscrepancy(rectangles) || this->lengths != chain->GetLengths()) {
+	if (IsRectangleDiscrepancy(rectangles) || this->lengths != chain->GetLengths() || this->table.size() != discrLevel.GetValue()) {
 		ImGui::SameLine();
+		timeElapsed += ImGui::GetIO().DeltaTime;
+		ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.f, 0.f, 0.f, (std::sin(timeElapsed * (2.f * M_PI / flashDuration)) + 1.f) / 2.f));
 		ImGui::Text("Pending changes!");
+		ImGui::PopStyleColor();
 	}
 
 	return change;
@@ -42,6 +52,8 @@ void ConfigurationSpace::RenderTexture() const
 {
     ImGui::SetNextWindowCollapsed(true, ImGuiCond_Once);
     ImGui::Begin("Colision texture", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
+		ImGui::Text("Symbols legend: triangle - start, square - end");
+		ImGui::Spacing();
         ImGui::Image((void*)(intptr_t)texture, ImVec2(table.size(), table.size()));
     ImGui::End();
 }
@@ -244,6 +256,62 @@ GLuint ConfigurationSpace::CreateTexture(std::pair<std::vector<glm::vec2>, std::
 		pixels[index + 1] = 0;					// G
 		pixels[index + 2] = 0;					// B
 		pixels[index + 3] = 255;				// A
+	}
+
+	auto paintBlueSquare = [&](glm::vec2 center, int length = 15) {
+		int halfLen = length / 2.f;
+		for (int i = -halfLen; i <= halfLen; ++i) {
+			for (int j = -halfLen; j <= halfLen; ++j) {
+				int x = center.x + i;
+				int y = center.y + j;
+
+				if (x >= 0 && x < n && y >= 0 && y < n) {
+					int index = (x * n + y) * 4;
+					pixels[index + 0] = 0;     // R
+					pixels[index + 1] = 0;     // G
+					pixels[index + 2] = 255;   // B
+					pixels[index + 3] = 255;   // A
+				}
+			}
+		}
+	};
+	auto paintBlueTriangle = [&](glm::vec2 center, int length = 15) {
+		float height = (sqrt(3.f) / 2.f) * length;
+		glm::vec2 p1 = center + glm::vec2(0.f, -height / 2.f);
+		glm::vec2 p2 = center + glm::vec2(-length / 2.f, height / 2.f);
+		glm::vec2 p3 = center + glm::vec2(length / 2.f, height / 2.f);
+
+		auto isPointInsideTriangle = [&](int x, int y) {
+			auto sign = [](glm::vec2 p1, glm::vec2 p2, glm::vec2 p3) {
+				return (p1.x - p3.x) * (p2.y - p3.y) - (p2.x - p3.x) * (p1.y - p3.y);
+				};
+
+			glm::vec2 pt(x, y);
+			bool b1, b2, b3;
+
+			b1 = sign(pt, p1, p2) < 0.f;
+			b2 = sign(pt, p2, p3) < 0.f;
+			b3 = sign(pt, p3, p1) < 0.f;
+
+			return (b1 == b2) && (b2 == b3);
+			};
+
+		for (int i = 0; i < n; ++i) {
+			for (int j = 0; j < n; ++j) {
+				if (isPointInsideTriangle(i, j)) {
+					int index = (i * n + j) * 4;
+					pixels[index + 0] = 0;     // R
+					pixels[index + 1] = 0;     // G
+					pixels[index + 2] = 255;   // B
+					pixels[index + 3] = 255;   // A
+				}
+			}
+		}
+	};
+
+	if (path.size() >= 2){
+		paintBlueTriangle(path[0]);
+		paintBlueSquare(path[path.size() - 1]);
 	}
 
     GLuint texture;

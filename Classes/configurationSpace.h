@@ -24,6 +24,7 @@ private:
 	std::vector<glm::vec4> rectanglesCoords;
 	std::vector<Rectangle*> rectangles;
 	glm::vec2 lengths;
+	float timeElapsed = 0.0f;
 
 	void ClearTable();
 	void CalculateTable(Chain* chain);

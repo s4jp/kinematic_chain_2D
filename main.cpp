@@ -32,6 +32,7 @@ void mouseMoveCallback(GLFWwindow* window, double xpos, double ypos);
 void changeToRelativeCoords(double& xpos, double& ypos);
 void calculateAndVerifyConfigs(bool start, bool end, bool keepSelection = false);
 void clearPath();
+void ShowCustomPopup(bool& showPopup, const char* popupTitle, const char* customText);
 
 bool isCreatingRectangle();
 int checkForRectangle(glm::vec2 pos);
@@ -43,7 +44,7 @@ static const int guiWidth = 300;
 static int mode = 0;
 static ControlledInputFloat L1("L1", 150.0f, 1.f, 1.f);
 static ControlledInputFloat L2("L2", 100.0f, 1.f, 1.f);
-bool drawCircles = false;
+bool drawCircles = true;
 
 Axis* axis;
 std::vector<Rectangle*> rectangles;
@@ -63,6 +64,7 @@ static float pathIndex = -1;
 static ControlledInputInt speed("Speed [%]", 25, 1, 1);
 
 static int selectedRectangle = -1;
+bool showPopup = false;
 
 int main() { 
     #pragma region gl_boilerplate
@@ -149,7 +151,10 @@ int main() {
             ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse);
 
 		ImGui::SeparatorText("Mode");
-		ImGui::RadioButton("Positions setup", &mode, 0); ImGui::SameLine();
+        if (ImGui::RadioButton("Positions setup", &mode, 0)) {
+			selectedRectangle = -1;
+        }
+            ImGui::SameLine();
 		ImGui::RadioButton("Obstacles setup", &mode, 1);
 
         if (mode == 0) {
@@ -249,21 +254,34 @@ int main() {
 			ImGui::SeparatorText("Pathfinding");
 
             if (ImGui::Button("Find and run")) {
-				clearPath();
-                path = confSpace->FindShortestPath(startConfigs[selectedConfigs[0]], endConfigs[selectedConfigs[1]]);
-				pathIndex = path.size() > 0 ? 0 : -1;
+                if (path.size() > 0) {
+					pathIndex = 0;
+                }
+                else {
+                    clearPath();
+                    path = confSpace->FindShortestPath(startConfigs[selectedConfigs[0]], endConfigs[selectedConfigs[1]]);
+                    pathIndex = path.size() > 0 ? 0 : -1;
+                }
+
+				if (path.size() == 0) {
+                    showPopup = true;
+				}
+
+                
             }
             if (path.size() > 0) {
                 ImGui::SameLine();
                 ImGui::Text("Path found! Size: %d", path.size());
 
 				if (pathIndex >= 0 && pathIndex <= path.size() + (float)speed.GetValue() / 100) {
-                    ImGui::Text("Animation running...");
                     int idx = (int)pathIndex % path.size();
+                    ImGui::Text("Animation running...    Step %d/%d", idx + 1, path.size());
 					chain->SetAngles(path[idx].x, path[idx].y);
 					pathIndex += (float)speed.GetValue() / 100.f;
 				}
             }
+
+            ShowCustomPopup(showPopup, "No path found", "There is no path between selected configurations.");
         }
 
 		ImGui::SeparatorText("Other");
@@ -441,4 +459,23 @@ int checkForRectangle(glm::vec2 pos)
 			return i;
 	}
 	return -1;
+}
+
+void ShowCustomPopup(bool& showPopup, const char* popupTitle, const char* customText)
+{
+    if (showPopup)
+    {
+        ImGui::SetNextWindowPos(ImGui::GetMousePos(), ImGuiCond_Appearing);
+        ImGui::OpenPopup(popupTitle);
+        showPopup = false;
+    }
+
+    if (ImGui::BeginPopup(popupTitle))
+    {
+        ImGui::TextWrapped("%s", customText);
+        ImGui::Separator();
+        if (ImGui::Button("OK", ImVec2(120, 0)))
+            ImGui::CloseCurrentPopup();
+        ImGui::EndPopup();
+    }
 }
