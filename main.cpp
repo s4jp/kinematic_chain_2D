@@ -59,7 +59,10 @@ enum Mode { OFF, START, END };
 static Mode targetMode = Mode::START;
 
 std::vector<glm::vec2> path;
-static int pathIndex = -1;;
+static float pathIndex = -1;
+static ControlledInputInt speed("Speed [%]", 100, 1, 1);
+
+static int selectedRectangle = -1;
 
 int main() { 
     #pragma region gl_boilerplate
@@ -205,11 +208,29 @@ int main() {
         else if (mode == 1) {
             ImGui::Spacing();
 
-            if (ImGui::Button("Clear all obstacles")) {
-                for (auto& r : rectangles)
-                    r->Delete();
-                rectangles.clear();
-            }
+			if (rectangles.size() > 0) {
+                if (ImGui::BeginListBox("Obstacles")) {
+                    for (int i = 0; i < rectangles.size(); i++) {
+                        if (ImGui::Selectable(rectangles[i]->name.c_str(), selectedRectangle == i)) {
+                            selectedRectangle = selectedRectangle == i ? -1 : i;
+                        }
+                    }
+                    ImGui::EndListBox();
+                }
+
+				if (selectedRectangle >= 0) {
+					rectangles[selectedRectangle]->RenderImgui();
+				}
+
+				ImGui::Separator();
+
+                if (ImGui::Button("Clear all obstacles")) {
+                    for (auto& r : rectangles)
+                        r->Delete();
+                    rectangles.clear();
+                    selectedRectangle = -1;
+                }
+			}
         }
 
 		ImGui::SeparatorText("Parameters");
@@ -236,17 +257,18 @@ int main() {
                 ImGui::SameLine();
                 ImGui::Text("Path found! Size: %d", path.size());
 
-				if (pathIndex >= 0 && pathIndex <= path.size()) {
+				if (pathIndex >= 0 && pathIndex <= path.size() + (float)speed.GetValue() / 100) {
                     ImGui::Text("Animation running...");
-                    int idx = pathIndex % path.size();
+                    int idx = (int)pathIndex % path.size();
 					chain->SetAngles(path[idx].x, path[idx].y);
-					pathIndex++;
+					pathIndex += (float)speed.GetValue() / 100.f;
 				}
             }
         }
 
 		ImGui::SeparatorText("Other");
 		ImGui::Checkbox("Show guide circles", &drawCircles);
+		speed.Render();
 
         ImGui::End();
 
@@ -285,6 +307,10 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 
     double xpos, ypos;
     glfwGetCursorPos(window, &xpos, &ypos);
+
+	if (xpos < 0 || xpos > viewportSize.x || ypos < 0 || ypos > viewportSize.y)
+		return;
+
 	changeToRelativeCoords(xpos, ypos);
     //std::cout << xpos << " " << ypos << std::endl;
 
@@ -292,7 +318,7 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
         if (mode == 1) {
             if (isCreatingRectangle()) {
                 rectangles[rectangles.size() - 1]->UpdateEnd(glm::vec2(xpos, ypos));
-                rectangles[rectangles.size() - 1]->inCreation = false;
+				rectangles[rectangles.size() - 1]->EndCreation();
             }
             else {
                 rectangles.push_back(new Rectangle(glm::vec2(xpos, ypos)));
@@ -400,7 +426,7 @@ void clearPath()
 
 bool isCreatingRectangle()
 {
-	return rectangles.size() != 0 && rectangles[rectangles.size() - 1]->inCreation;
+	return rectangles.size() != 0 && rectangles[rectangles.size() - 1]->IsInCreation();
 }
 
 int checkForRectangle(glm::vec2 pos)

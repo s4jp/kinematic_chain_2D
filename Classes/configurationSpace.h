@@ -21,6 +21,7 @@ private:
 	ControlledInputInt discrLevel;
 	std::vector<std::vector<char>> table;
 	GLuint texture;
+	std::vector<glm::vec4> rectanglesLengths;
 	std::vector<Rectangle*> rectangles;
 	glm::vec2 lengths;
 
@@ -29,4 +30,7 @@ private:
 	GLuint CreateTexture(std::pair<std::vector<glm::vec2>, std::unordered_map<int, float>> pd = {}) const;
 	glm::vec2 GetIndices(const glm::vec2 angles) const;
 	glm::vec2 GetAngles(const glm::vec2 indices) const;
+
+	bool IsRectangleDiscrepancy(const std::vector<Rectangle*>& rectangles) const;
+	std::vector<glm::vec4> GetRectangles(const std::vector<Rectangle*>& rectangles) const;
 };

@@ -9,6 +9,7 @@ ConfigurationSpace::ConfigurationSpace(Chain* chain, std::vector<Rectangle*> rec
 	: discrLevel("Discr. level", discrLevel, 1, 1)
 {
 	this->rectangles = rectangles;
+	this->rectanglesLengths = GetRectangles(rectangles);
 	this->lengths = chain->GetLengths();
 	this->ClearTable();
 	this->texture = CreateTexture();
@@ -21,12 +22,14 @@ bool ConfigurationSpace::RenderImGui(Chain* chain, std::vector<Rectangle*> recta
 	discrLevel.Render();
 	if (ImGui::Button("Calculate")) {
 		this->rectangles = rectangles;
+		this->rectanglesLengths = GetRectangles(rectangles);
 		this->lengths = chain->GetLengths();
 		CalculateTable(chain);
 		texture = CreateTexture();
 		change = true;
 	}
-	if (this->rectangles != rectangles || this->lengths != chain->GetLengths()) {
+
+	if (IsRectangleDiscrepancy(rectangles) || this->lengths != chain->GetLengths()) {
 		ImGui::SameLine();
 		ImGui::Text("Pending changes!");
 	}
@@ -128,6 +131,28 @@ glm::vec2 ConfigurationSpace::GetAngles(const glm::vec2 indices) const
 	int n = discrLevel.GetValue();
 	float step = 360.0f / n;
 	return { indices.x * step, indices.y * step };
+}
+
+bool ConfigurationSpace::IsRectangleDiscrepancy(const std::vector<Rectangle*>& rectangles) const
+{
+	std::vector<glm::vec4> newRectangles = GetRectangles(rectangles);
+
+	if (this->rectanglesLengths.size() != newRectangles.size()) return true;
+
+	for (int i = 0; i < rectangles.size(); i++) {
+		if (this->rectanglesLengths[i] != newRectangles[i]) return true;
+	}
+}
+
+std::vector<glm::vec4> ConfigurationSpace::GetRectangles(const std::vector<Rectangle*>& rectangles) const
+{
+	std::vector<glm::vec4> result;
+
+	for (int i = 0; i < rectangles.size(); i++) {
+		result.push_back(rectangles[i]->GetRectangle());
+	}
+
+	return result;
 }
 
 void ConfigurationSpace::ClearTable()

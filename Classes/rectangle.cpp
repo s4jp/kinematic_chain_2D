@@ -1,10 +1,17 @@
 #include "rectangle.h"
 #include <glm/gtc/type_ptr.hpp>
 #include <iostream>
+#include <imgui.h>
+
+const char* movementModes[] = { "Whole", "Left", "Right", "Top", "Bottom"};
+const int movementStep = 1;
+
+int Rectangle::counter = 0;
 
 Rectangle::Rectangle(glm::vec2 startPos) : Figure(InitializeAndCalculate(startPos))
 {
 	this->inCreation = true;
+    this->name = "Rectangle #" + std::to_string(++counter);
 }
 
 void Rectangle::Render(int colorLoc)
@@ -115,6 +122,97 @@ char Rectangle::CheckCollision(const std::vector<glm::vec2> joints) const
     }
 
     return false;
+}
+
+void Rectangle::RenderImgui()
+{
+	ImGui::SeparatorText((name + " movement:").c_str());
+
+	ImGui::Combo("Mode", &movementMode, movementModes, IM_ARRAYSIZE(movementModes));
+
+    float windowWidth = ImGui::GetContentRegionAvail().x;
+    float buttonWidth = windowWidth / 3.f;
+    float buttonHeight = 0.f;
+
+	glm::vec2 change = glm::vec4(0.f);
+
+    ImGui::PushButtonRepeat(true);
+
+	if (movementMode == 0 || movementMode == 3 || movementMode == 4) 
+    {
+        ImGui::SetCursorPosX((windowWidth - buttonWidth) / 2.f);
+        if (ImGui::Button("Up", ImVec2(buttonWidth, buttonHeight))) {
+            //std::cout << "Up Pressed!" << std::endl;
+            change.y += movementStep;
+        }
+	}
+
+    if (movementMode == 0 || movementMode == 1 || movementMode == 2)
+    {
+        ImGui::SetCursorPosX(0.f);
+        if (ImGui::Button("Left", ImVec2(buttonWidth, buttonHeight))) {
+            //std::cout << "Left Pressed!" << std::endl;
+            change.x -= movementStep;
+        }
+
+        ImGui::SameLine();
+
+        ImGui::SetCursorPosX(windowWidth - buttonWidth);
+        if (ImGui::Button("Right", ImVec2(buttonWidth, buttonHeight))) {
+            //std::cout << "Right Pressed!" << std::endl;
+            change.x += movementStep;
+        }
+    }
+
+    if (movementMode == 0 || movementMode == 3 || movementMode == 4)
+    {
+        ImGui::SetCursorPosX((windowWidth - buttonWidth) / 2.f);
+        if (ImGui::Button("Down", ImVec2(buttonWidth, buttonHeight))) {
+            //std::cout << "Down Pressed!" << std::endl;
+            change.y -= movementStep;
+        }
+    }
+
+    ImGui::PopButtonRepeat();
+
+    switch (movementMode) {
+    case 0:
+        // whole
+        startPos += change;
+        endPos += change;
+        break;
+    case 1:
+        // left
+        startPos += change;
+        break;
+    case 2:
+        // right
+        endPos += change;
+        break;
+    case 3:
+        // top
+        endPos += change;
+        break;
+    case 4:
+		// bottom
+		startPos += change;
+		break;
+    }
+
+	RefreshBuffers(Calculate());
+}
+
+void Rectangle::EndCreation()
+{
+	inCreation = false;
+
+    glm::vec2 nStart = glm::vec2(glm::min(startPos.x, endPos.x), glm::min(startPos.y, endPos.y));
+    glm::vec2 nEnd = glm::vec2(glm::max(startPos.x, endPos.x), glm::max(startPos.y, endPos.y));
+
+	this->startPos = nStart;
+	this->endPos = nEnd;
+
+	RefreshBuffers(Calculate());
 }
 
 std::tuple<std::vector<GLfloat>, std::vector<GLuint>> Rectangle::Calculate() const
