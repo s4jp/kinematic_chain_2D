@@ -42,31 +42,42 @@ void ConfigurationSpace::RenderTexture() const
     ImGui::End();
 }
 
-void ConfigurationSpace::RoundToNearest(glm::vec2& angles) const
+glm::vec2 ConfigurationSpace::GetIndices(const glm::vec2 angles) const
 {
-	int n = discrLevel.GetValue();
-	float step = 360.0f / n;
-	angles.x = round(angles.x / step) * step;
-	angles.y = round(angles.y / step) * step;
+	auto roundToNearest = [](glm::vec2 q, int n) {
+		float step = 360.0f / n;
+		q.x = round(q.x / step) * step;
+		q.y = round(q.y / step) * step;
 
-	if (angles.x >= 360.0f) angles.x = 0.0f;
-	if (angles.y >= 360.0f) angles.y = 0.0f;
+		while (q.x >= 360.0f) q.x -= 360.0f;
+		while (q.y >= 360.0f) q.y -= 360.0f;
+
+		return q;
+	};
+
+	int n = discrLevel.GetValue();
+	glm::vec2 rounded = roundToNearest(angles, n);
+
+	float step = 360.0f / n;
+	int i = (int)(rounded.x / step);
+	int j = (int)(rounded.y / step);
+	return { i, j };
 }
 
 bool ConfigurationSpace::CheckCollision(glm::vec2 angles) const
 {
-	int n = discrLevel.GetValue();
-	float step = 360.0f / n;
-	int i = (int)(angles.x / step);
-	int j = (int)(angles.y / step);
-	return table[i][j];
+	glm::vec2 idx = GetIndices(angles);
+	return table[idx.x][idx.y];
 }
 
-std::vector<glm::vec2> ConfigurationSpace::FindShortestPath(glm::vec2 startIdx, glm::vec2 endIdx)
+std::vector<glm::vec2> ConfigurationSpace::FindShortestPath(glm::vec2 startConf , glm::vec2 endConf)
 {
 	auto modulo = [](int x, int n) {
 		return (x % n + n) % n;
 	};
+
+	glm::vec2 startIdx = GetIndices(startConf);
+	glm::vec2 endIdx = GetIndices(endConf);
 
 	int n = table.size();
 
@@ -90,6 +101,9 @@ std::vector<glm::vec2> ConfigurationSpace::FindShortestPath(glm::vec2 startIdx, 
             std::reverse(path.begin(), path.end());
 
 			this->texture = CreateTexture({ path, distance });
+			for (auto& p : path) {
+				p = GetAngles(p);
+			}
             return path;
         }
 
@@ -107,6 +121,13 @@ std::vector<glm::vec2> ConfigurationSpace::FindShortestPath(glm::vec2 startIdx, 
     }
 
 	return {};
+}
+
+glm::vec2 ConfigurationSpace::GetAngles(const glm::vec2 indices) const
+{
+	int n = discrLevel.GetValue();
+	float step = 360.0f / n;
+	return { indices.x * step, indices.y * step };
 }
 
 void ConfigurationSpace::ClearTable()
@@ -143,7 +164,7 @@ void ConfigurationSpace::CalculateTable(Chain* chain)
 	}
 }
 
-GLuint ConfigurationSpace::CreateTexture(std::pair<std::vector<glm::vec2>, std::unordered_map<int, float>> path) const
+GLuint ConfigurationSpace::CreateTexture(std::pair<std::vector<glm::vec2>, std::unordered_map<int, float>> pd) const
 {
     int n = table.size();
     if (n == 0 || table[0].size() == 0) return 0;
@@ -168,7 +189,7 @@ GLuint ConfigurationSpace::CreateTexture(std::pair<std::vector<glm::vec2>, std::
         }
     }
 
-	std::unordered_map<int, float> distance = path.second;
+	std::unordered_map<int, float> distance = pd.second;
 
 	float maxDistance = 0;
 	for (const auto& d : distance) {
@@ -186,7 +207,9 @@ GLuint ConfigurationSpace::CreateTexture(std::pair<std::vector<glm::vec2>, std::
 		pixels[index + 3] = 255;				// A
 	}
 
-	for (const auto& p : path.first) {
+	std::vector<glm::vec2> path = pd.first;
+
+	for (const auto& p : path) {
         int index = (p.x * n + p.y) * 4;
 		pixels[index + 0] = 255;				// R
 		pixels[index + 1] = 0;					// G

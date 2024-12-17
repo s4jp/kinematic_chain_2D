@@ -15,7 +15,8 @@ public:
 	std::vector<glm::vec2> CalculateJoints(float a1, float a2) const;
 	std::vector<glm::vec2> InverseKinematics(glm::vec2 target) const;
 	void SetColor(glm::vec4 color);
-	glm::vec2 GetLengths();
+	glm::vec2 GetLengths() const;
+	glm::vec2 GetAngles() const;
 private:
 	float L1, L2;
 	float angle1, angle2;

@@ -1,7 +1,7 @@
 #include "chain.h"
 #include <glm/gtc/type_ptr.hpp>
 
-const float lineWidth = 10.0f;
+const float lineWidth = 3.0f;
 const float defaultLineWidth = 1.0f;
 const float sameAngleThreshold = 0.1f;
 const int circleVertices = 360;
@@ -106,9 +106,14 @@ void Chain::SetColor(glm::vec4 color)
 	this->color = color;
 }
 
-glm::vec2 Chain::GetLengths()
+glm::vec2 Chain::GetLengths() const
 {
 	return glm::vec2(L1, L2);
+}
+
+glm::vec2 Chain::GetAngles() const
+{
+	return glm::vec2(angle1, angle2);
 }
 
 std::tuple<std::vector<GLfloat>, std::vector<GLuint>> Chain::InitializeAndCalculate(float L1, float L2, float angle1, float angle2)

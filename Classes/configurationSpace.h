@@ -15,9 +15,8 @@ public:
 	bool RenderImGui(Chain* chain, std::vector<Rectangle*> rectangles);
 	void RenderTexture() const;
 
-	void RoundToNearest(glm::vec2& angles) const;
 	bool CheckCollision(glm::vec2 angles) const;
-	std::vector<glm::vec2> FindShortestPath(glm::vec2 startIdx, glm::vec2 endIdx);
+	std::vector<glm::vec2> FindShortestPath(glm::vec2 startConf, glm::vec2 endConf);
 private:
 	ControlledInputInt discrLevel;
 	std::vector<std::vector<char>> table;
@@ -27,5 +26,7 @@ private:
 
 	void ClearTable();
 	void CalculateTable(Chain* chain);
-	GLuint CreateTexture(std::pair<std::vector<glm::vec2>, std::unordered_map<int, float>> = {}) const;
+	GLuint CreateTexture(std::pair<std::vector<glm::vec2>, std::unordered_map<int, float>> pd = {}) const;
+	glm::vec2 GetIndices(const glm::vec2 angles) const;
+	glm::vec2 GetAngles(const glm::vec2 indices) const;
 };
